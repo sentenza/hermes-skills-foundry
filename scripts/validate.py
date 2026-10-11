@@ -5,7 +5,8 @@ Validates skills against repository standards:
 1. Structure: SKILL.md presence, valid YAML frontmatter, naming and length constraints.
 2. Provenance: Attribution header for ported skills.
 3. Compatibility: Declared hermes_requires version range.
-4. Reference integrity: Referenced files in references/ and assets/ exist on disk.
+4. Reference integrity: Referenced files in references/, assets/, and supporting
+   dirs (scripts/, agents/, eval-viewer/) exist on disk.
 """
 
 import argparse
@@ -17,9 +18,9 @@ import sys
 NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 # Attribution line pattern: adapted from <repo> (<LICENSE>)
 ATTRIBUTION_PATTERN = re.compile(r"adapted from\s+\S+\s*\([^)]+\)", re.IGNORECASE)
-# Reference link pattern under references/ or assets/
+# Reference link pattern under references/, assets/, or supporting dirs
 REFERENCE_PATTERN = re.compile(
-    r"(?:(?:\./)?(?:references|assets)/[a-zA-Z0-9_.-]+[^\s)\]`\"'>]*)"
+    r"(?:(?:\./)?(?:references|assets|scripts|agents|eval-viewer)/[a-zA-Z0-9_.-]+[^\s)\]`\"'>]*)"
 )
 
 

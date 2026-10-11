@@ -10,11 +10,19 @@ Each skill must reside in its own subdirectory under `skills/`:
 skills/<skill-name>/
 ├── SKILL.md
 ├── distribution.yaml     (optional: distribution and compatibility metadata)
+├── LICENSE-<upstream>    (ports only: a copy of the upstream licence text)
+├── NOTICE                (ports only: upstream attribution and modification record)
 ├── references/           (optional: supplementary reference documents)
 │   └── ...
 ├── assets/               (optional: static templates, schemas, and data files)
 │   └── ...
-└── evals/                (required: test prompts, test cases, and outputs)
+├── scripts/              (optional: executable code for deterministic/repetitive tasks)
+│   └── ...
+├── agents/               (optional: sub-agent role prompts referenced from SKILL.md)
+│   └── ...
+├── eval-viewer/          (optional: tooling that renders evaluation results for review)
+│   └── ...
+└── evals/                (required: test-fixture prompts and an honest result status)
     ├── prompts.md
     └── results.json
 ```
@@ -63,14 +71,20 @@ Skills must remain concise. Deep background knowledge, extensive API tables, and
 
 - Place secondary documentation in `references/`.
 - Place reusable templates, schemas, and static data in `assets/`.
+- Place executable code for deterministic or repetitive tasks in `scripts/`.
+- Place sub-agent role prompts (referenced from `SKILL.md`) in `agents/`.
+- Place tooling that renders evaluation results for human review in `eval-viewer/`.
 - Link or reference files using relative paths from the skill root.
-- All file paths mentioned under `references/` or `assets/` in `SKILL.md` MUST resolve to valid files on disk.
+- All file paths mentioned under `references/`, `assets/`, `scripts/`, `agents/`, or `eval-viewer/` in `SKILL.md` MUST resolve to valid files on disk.
 
 ## 6. Provenance and Attribution for Ports
 
 Skills adapted from external agent harnesses (such as Claude Code, OpenClaw, Codex, or pi) are welcomed, provided they respect copyright:
 
 - An attribution line of the form `adapted from <repo> (<LICENSE>)` MUST appear immediately following the closing `---` of the frontmatter.
+- A copy of the upstream licence text MUST be shipped in the skill directory (for example `LICENSE-APACHE-2.0`).
+- A `NOTICE` file MUST name the upstream repository, its licence, the derived files, and the nature of the modifications.
+- Every file modified from upstream MUST carry a prominent notice that it was changed (for example a header comment).
 - Ported skills MUST be rewritten to adhere to Hermes conventions and tool abstractions rather than copied verbatim.
 - Content MUST NOT be ported from upstream repositories that lack an explicit open-source licence.
 
@@ -94,13 +108,15 @@ Every skill MUST include an `evals/` directory containing repeatable verificatio
 
 - Evaluative prompts or invocation scenarios that test skill workflows.
 - Expected outputs or acceptance assertions.
-- Recorded evaluation runs documenting success rate and tested Hermes runtime versions.
+- A result record (`results.json`) whose `status` is either `complete`, with a measured pass rate, or `pending`, with the reason it has not been recorded.
+
+A recorded pass rate is required where the skill's output is objectively verifiable (code generation, data extraction, file transforms). Where the deliverable is subjective or is itself a document (a persona, prose, a design), a with/without benchmark cannot discriminate between the two configurations; there an honest `pending` record MUST be used instead of a fabricated or padded result. Never record a pass rate that was not measured.
 
 ## 8. Normative Gates
 
 Admission to the repository requires satisfying four mandatory gates:
 
 1. **Structure Gate**: The skill MUST adhere to the directory layout, YAML frontmatter schema, length constraints, naming rules, and reference integrity checked by `scripts/validate.py`.
-2. **Behaviour Gate**: The skill MUST provide working evals in `evals/` that demonstrate reliable behaviour on target tasks.
+2. **Behaviour Gate**: The skill MUST provide an actual eval fixture in `evals/` (`prompts.md` and `results.json`). A recorded, measured pass rate is expected for objectively verifiable skills; for document- or judgment-producing skills an honest `pending` status, with the reason stated, satisfies the gate. Fabricated, padded, or non-discriminating results do not.
 3. **Provenance Gate**: If the skill is ported, it MUST include a valid attribution header and upstream licence citation immediately beneath the frontmatter.
 4. **Compatibility Gate**: The skill MUST declare an explicit, tested `hermes_requires` version constraint.

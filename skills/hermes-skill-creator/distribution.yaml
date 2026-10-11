@@ -1,0 +1,17 @@
+name: hermes-skill-creator
+version: 0.1.0
+description: Meta-skill for creating, testing, and iteratively improving Hermes Agent skills, with agy as the coding engine and Hermes delegate_task for parallel evaluation.
+hermes_requires: ">=0.21"
+author: sentenza
+license: Apache-2.0
+distribution_owned:
+  - SKILL.md
+  - LICENSE-APACHE-2.0
+  - NOTICE
+  - references
+  - assets
+  - agents
+  - eval-viewer
+  - scripts
+  - evals
+  - distribution.yaml
