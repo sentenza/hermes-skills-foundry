@@ -1,4 +1,4 @@
-<!-- Derived from anthropics/skills skill-creator (Apache-2.0); modified for the Hermes Agent. See NOTICE. -->
+<!-- Copyright 2026 Alfredo Torre (sentenza). Derived from anthropics/skills skill-creator (Apache-2.0); modified for the Hermes Agent. See NOTICE. -->
 
 # Grader Agent
 
