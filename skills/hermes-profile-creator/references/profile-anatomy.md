@@ -12,6 +12,8 @@ A Hermes profile is an isolated agent instance maintaining its own:
 - **Default Profile**: Resides at `~/.hermes/` (or `$HERMES_HOME`). The name `default` is reserved for this root slot.
 - **Named Profiles**: Reside at `~/.hermes/profiles/<name>/`.
 
+**Editing the default profile.** Nothing to create: write `$HERMES_HOME/SOUL.md` directly and set the routing description with `hermes profile describe default --text "…"`. `hermes profile create default` is rejected because `default` is the reserved root slot.
+
 ### Profile Home Directory Structure
 ```text
 ~/.hermes/profiles/<name>/
