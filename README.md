@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml"><img alt="Validate" src="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml/badge.svg"></a>
-  <img alt="Hermes" src="https://img.shields.io/badge/Hermes-%E2%89%A50.20-purple">
+  <img alt="Hermes" src="https://img.shields.io/badge/Hermes-%E2%89%A50.21-purple">
   <img alt="Skills" src="https://img.shields.io/badge/skills-1-blue">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
 </p>
@@ -72,7 +72,7 @@ Then point Hermes at a single skill directory, or copy it into `~/.hermes/skills
 
 | Skill | What it does | Hermes | Evals |
 |---|---|---|---|
-| `hermes-profile-creator` (planned) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.20 | — |
+| [`hermes-profile-creator`](skills/hermes-profile-creator/) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.21 | — |
 
 > Add one row per skill. Keep the "What it does" cell to one line — the detail belongs in the skill itself.
 
@@ -120,7 +120,7 @@ Contributions are accepted under this repo's MIT licence (inbound = outbound) �
 - [x] Repository skeleton
 - [x] `docs/standard.md` — the written standard
 - [x] CI gate wired to `scripts/validate.py`
-- [ ] `hermes-profile-creator` — profile and `SOUL.md` creation and editing
+- [x] `hermes-profile-creator` — profile and `SOUL.md` creation and editing
 - [ ] Per-skill eval badges
 
 ---
