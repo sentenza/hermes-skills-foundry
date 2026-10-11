@@ -38,6 +38,8 @@ All skills must pass four distinct gates before admission:
 - **Provenance**: Any ported content must cite its origin repository and upstream licence, ship that licence text, and include a `NOTICE` of modifications.
 - **Compatibility**: Every skill must declare an explicit `hermes_requires` range tested against supported Hermes releases.
 
+> The practical, step-by-step procedure for contributing a skill ships with the `hermes-skill-creator` skill: [`skills/hermes-skill-creator/references/foundry-contribution.md`](skills/hermes-skill-creator/references/foundry-contribution.md). This guide is the rule; that reference is the procedure.
+
 ## Porting Rules
 
 Skills adapted from external agent frameworks (such as Claude Code, OpenClaw, Codex, or pi) are welcome, subject to five strict requirements:

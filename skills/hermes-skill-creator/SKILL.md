@@ -563,6 +563,7 @@ Before declaring a skill ready:
 - `scripts/quick_validate.py` — frontmatter validation
 - `scripts/package_skill.py` — validate + zip a skill for sharing
 - `references/install-and-curate.md` — publish a skill to a git repo, install it as a tap, verify it truly triggers (enabled + usage counter), and retire it safely (curator pin vs archive)
+- `references/foundry-contribution.md` — land a created skill in the Hermes Skills Foundry: layout, frontmatter, evals fixture, port attribution and licence, running the gate, opening the PR
 - The `agy-antigravity-cli` skill for agy CLI usage
 
 <!-- upstream: derived from anthropics/skills skills/skill-creator.

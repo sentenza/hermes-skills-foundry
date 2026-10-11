@@ -118,6 +118,36 @@ You can also point Hermes at a single skill directory, or copy it into `~/.herme
 
 ---
 
+## Create a skill, then contribute it
+
+The [`hermes-skill-creator`](skills/hermes-skill-creator/) skill is the foundry's own authoring
+tool: it walks the full lifecycle — intent capture, drafting, test cases, evaluation with and
+without the skill, iteration, packaging.
+
+```bash
+hermes skills install sentenza/hermes-skills-foundry/skills/hermes-skill-creator --category software-development -y
+```
+
+Then ask it to "create a skill for X". Once the skill is drafted and tested, land it here:
+
+- follow the four gates in [`docs/standard.md`](docs/standard.md);
+- the concrete procedure — layout, frontmatter, evals fixture, port attribution and licence,
+  running the gate, opening the PR — is in the skill's own
+  [`references/foundry-contribution.md`](skills/hermes-skill-creator/references/foundry-contribution.md);
+- add a one-line row to the skills table above, then open a PR.
+
+```bash
+git clone https://github.com/sentenza/hermes-skills-foundry.git
+cd hermes-skills-foundry
+python3 scripts/validate.py          # CI runs this exact gate
+```
+
+That procedure ships inside the skill's `references/` on purpose: an installed skill has no
+access to this repo's `docs/`, so anything its workflow needs at runtime travels with it. The
+foundry docs *link* to those references rather than copying them — one source, no drift.
+
+---
+
 ## The standard
 
 The rules a skill must follow to live here — frontmatter shape, `references/` layout, the attribution header, the `hermes_requires` range, and how evals are structured — are written down in [`docs/standard.md`](docs/standard.md).
