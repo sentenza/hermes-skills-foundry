@@ -1,6 +1,6 @@
 ---
 name: hermes-skill-creator
-description: "Use when creating, testing, or iteratively improving a Hermes Agent skill — 'create a skill for X', 'turn this workflow into a skill', 'make a skill that does Y', 'improve/test/evaluate this skill', or a draft SKILL.md to be tested and iterated. Runs the full lifecycle (intent capture → drafting → test-case creation → multi-run evaluation with and without the skill → grading → HTML review viewer → blind A/B comparison → iteration → description optimization → validation and packaging), using agy (antigravity CLI) as the coding engine and Hermes delegate_task for parallel evaluation. Always prefer this over ad-hoc skill creation."
+description: "Use when creating, testing, or iteratively improving a Hermes Agent skill — 'create a skill for X', 'turn this workflow into a skill', 'make a skill that does Y', 'improve/test/evaluate this skill', or a draft SKILL.md to be tested and iterated. Runs the full lifecycle (intent capture → drafting → test-case creation → multi-run evaluation with and without the skill → grading → HTML review viewer → blind A/B comparison → iteration → description optimization → validation and packaging) on the Hermes agent, using delegate_task for parallel evaluation; any external code assistant (agy, opencode, claude, …) is optional and used only if installed and selected. Always prefer this over ad-hoc skill creation."
 tags:
   - meta-skill
   - skill-creation
@@ -13,16 +13,21 @@ hermes_requires: ">=0.21"
 related_skills:
   - agy-antigravity-cli
 compatibility:
-  requires_agy: true
-  agy_model_default: "Gemini 3.8 Flash (Medium)"
+  engine: hermes          # default engine; no external tool required
+  optional_engines:       # opt-in external code assistants, selected at runtime
+    - agy
+    - opencode
+    - claude
 ---
 <!-- adapted from anthropics/skills (Apache-2.0) -->
 
 # Hermes Skill Creator
 
-A skill for creating new Hermes skills and iteratively improving them. Code
-generation and baseline runs use `agy` (antigravity CLI); parallel with-skill
-runs and graders use Hermes `delegate_task`.
+A skill for creating new Hermes skills and iteratively improving them. The
+Hermes agent is the engine: it drafts, runs the with-skill and the baseline
+evaluations through `delegate_task`, and grades. An external code assistant
+(`agy`, `opencode`, `claude`, …) is optional — used only if installed and
+selected, never required.
 
 At a high level:
 
@@ -228,8 +233,9 @@ Execute this task:
 - Improving an existing skill: snapshot it first
   (`cp -r <skill-path> <workspace>/skill-snapshot/`) and point the baseline at
   the snapshot.
-- Fall back to `agy --print` for the baseline when `delegate_task` isn't
-  available; save stdout to `outputs/response.txt`.
+- With no external engine, the baseline is simply another `delegate_task` run
+  without the skill. If an external engine is configured (see Phase 8) it may
+  serve as the baseline instead; save its stdout to `outputs/response.txt`.
 
 Write `eval_metadata.json` per eval (assertions may be empty for now):
 ```json
@@ -345,9 +351,14 @@ is usually sufficient.
 
 ## Phase 8: Description optimization (optional, final step)
 
-The `description` field is the primary trigger mechanism. Optimize it with the
-agy-backed loop. (Upstream's `run_eval.py`/`run_loop.py`/`improve_description.py`
-are hardwired to `claude -p`; this skill uses `agy` instead.)
+The `description` field is the primary trigger mechanism. Optimize it either
+in-session with the Hermes agent, or with
+`scripts/run_description_optimization.py` against any configured engine
+(`--engine auto|agy|opencode|claude|<name>`, or a free-form
+`--engine-cmd '<command> {prompt}'`). **No external engine is required** — with
+none installed, do it in-session and skip the script. (Upstream's
+`run_eval.py`/`run_loop.py`/`improve_description.py` were hardwired to `claude -p`;
+this skill is engine-agnostic.)
 
 ### Step 1: Generate trigger eval queries
 
@@ -379,9 +390,11 @@ toggles trigger/no-trigger, then clicks "Export Eval Set" to download `eval_set.
 python3 <skill-creator-path>/scripts/run_description_optimization.py \
   --eval-set eval_set.json \
   --skill-path <path/to/skill> \
-  --model "Gemini 3.8 Flash (Medium)" \
+  --engine auto \                 # auto | agy | opencode | claude | <name>
   --max-iterations 5 \
   --runs-per-query 3
+# no external engine? omit it and do Phase 8 in-session, or pass:
+#   --engine-cmd 'agy --model "Gemini 3.8 Flash (Medium)" --print {prompt}'
 ```
 This splits 60% train / 40% held-out test, evaluates the current description
 (running each query several times for a reliable trigger rate), proposes
@@ -500,10 +513,16 @@ refining it over authoring a second skill that duplicates it.
 - **Create eval directories as you go** — don't scaffold every eval dir upfront.
 - **timing.json must be captured on completion** — it isn't persisted elsewhere.
 - **No nested delegation** — `delegate_task` subagents cannot call `delegate_task`.
-- **agy**: always `--print` for non-interactive runs (default 5m timeout; use
-  `--print-timeout 10m` for long tasks); verify claimed outputs with
-  `read_file()` before reporting; model names are case-sensitive
+- **External engines are optional** — nothing here requires `agy`, `opencode` or
+  `claude`; the Hermes agent is the default. Select one with `--engine` (or the
+  `HERMES_SKILL_ENGINE` env var) only when it is installed, and verify its
+  claimed outputs with `read_file()` before reporting. For `agy` specifically:
+  always `--print` for non-interactive runs (default 5m timeout; use
+  `--print-timeout 10m` for long tasks) and note model names are case-sensitive
   (`"Gemini 3.8 Flash (Medium)"`).
+- **A missing engine must fail, not fake success.** If no engine is available,
+  the run aborts with a clear message; it must never score queries, print an
+  accuracy, write a report, or update `SKILL.md`.
 - **Assertions must be objectively verifiable** — subjective quality is for
   human review, not automated grading.
 - **A test prompt that states the target structure measures the prompt, not the skill.** If the
