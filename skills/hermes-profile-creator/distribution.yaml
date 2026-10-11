@@ -1,0 +1,12 @@
+name: hermes-profile-creator
+version: 0.1.0
+description: Guides profile creation, soul persona synthesis, configuration scaffolding, and distribution packaging.
+hermes_requires: ">=0.21"
+author: sentenza
+license: MIT
+distribution_owned:
+  - SKILL.md
+  - references
+  - assets
+  - evals
+  - distribution.yaml

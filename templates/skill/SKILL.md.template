@@ -1,0 +1,44 @@
+---
+name: skill-name
+description: Use when <trigger>. <behaviour>.
+tags:
+  - tag1
+  - tag2
+# hermes_requires: ">=0.20"
+---
+<!-- ported: adapted from <repo> (<LICENSE>) -->
+
+# Skill Name
+
+## Overview
+
+A concise summary of what this skill does and the capability it provides.
+
+## When to use
+
+Specific scenarios and trigger contexts for this skill:
+
+- Trigger scenario 1.
+- Trigger scenario 2.
+
+## Workflow
+
+Step-by-step procedure for executing the skill:
+
+1. Step one.
+2. Step two.
+3. Step three.
+
+## Pitfalls
+
+Common failure modes and mitigations:
+
+- Pitfall 1: Description and recommended prevention.
+- Pitfall 2: Description and recommended prevention.
+
+## Verification
+
+Criteria and procedures to verify execution success:
+
+- Validate generated artefacts against requirements.
+- Execute relevant test cases or evaluation checks.

@@ -1,13 +1,3 @@
-<!--
-BASE README for hermes-skills-foundry — github.com/sentenza/hermes-skills-foundry
-Remaining before you push:
-  - add one row to the skills table per skill (only hermes-profile-creator is planned so far)
-  - the canonical URL of the "Agent Skills open standard", if you want to link it under
-    "Borrowing from other harnesses" (currently plain text, so nothing wrong ships)
-  - the badges assume a .github/workflows/validate.yml workflow named "Validate"
-Delete this comment block once the repo is live.
--->
-
 <h1 align="center">Hermes Skills Foundry</h1>
 
 <p align="center">
@@ -16,7 +6,7 @@ Delete this comment block once the repo is live.
 
 <p align="center">
   <a href="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml"><img alt="Validate" src="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml/badge.svg"></a>
-  <img alt="Hermes" src="https://img.shields.io/badge/Hermes-%E2%89%A50.20-purple">
+  <img alt="Hermes" src="https://img.shields.io/badge/Hermes-%E2%89%A50.21-purple">
   <img alt="Skills" src="https://img.shields.io/badge/skills-1-blue">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
 </p>
@@ -49,7 +39,7 @@ A skill enters the foundry only if it clears four gates.
 
 | Gate | Check |
 |---|---|
-| **Structure** | `SKILL.md` frontmatter and layout validated by `quick_validate.py` |
+| **Structure** | `SKILL.md` frontmatter and layout validated by `scripts/validate.py` |
 | **Behaviour** | Evals defined and passing; the pass rate is recorded per skill |
 | **Provenance** | Every ported skill carries an `adapted from <repo> (<LICENSE>)` header |
 | **Compatibility** | `hermes_requires` declares a Hermes version range the skill was tested against |
@@ -82,7 +72,7 @@ Then point Hermes at a single skill directory, or copy it into `~/.hermes/skills
 
 | Skill | What it does | Hermes | Evals |
 |---|---|---|---|
-| [`hermes-profile-creator`](skills/hermes-profile-creator/) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.20 | — |
+| [`hermes-profile-creator`](skills/hermes-profile-creator/) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.21 | — |
 
 > Add one row per skill. Keep the "What it does" cell to one line — the detail belongs in the skill itself.
 
@@ -127,9 +117,10 @@ Contributions are accepted under this repo's MIT licence (inbound = outbound) �
 
 ## Roadmap
 
-- [ ] `hermes-profile-creator` — profile and `SOUL.md` creation and editing
-- [ ] `docs/standard.md` — the written standard
-- [ ] CI gate wired to `quick_validate.py`
+- [x] Repository skeleton
+- [x] `docs/standard.md` — the written standard
+- [x] CI gate wired to `scripts/validate.py`
+- [x] `hermes-profile-creator` — profile and `SOUL.md` creation and editing
 - [ ] Per-skill eval badges
 
 ---
