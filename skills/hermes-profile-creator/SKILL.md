@@ -22,6 +22,7 @@ A Hermes profile is an isolated agent instance with its own identity (`SOUL.md`)
 ## When to use
 
 - Creating or editing a Hermes profile with custom behavior or tools.
+- Editing the built-in default profile's persona (`$HERMES_HOME/SOUL.md`) — the running agent's own identity.
 - Designing a `SOUL.md` persona from scratch or refining an existing voice.
 - Giving an agent a distinct personality without adding rule bloat.
 - Packaging, sharing, or installing reusable profile distributions.
@@ -86,6 +87,10 @@ Test the draft against scenario prompts before disk scaffolding:
 
 ### 6. Scaffold the Profile on Disk
 Initialize and configure the profile using Hermes commands:
+
+**Targeting the default profile (the built-in instance).** The default profile is the root instance at `$HERMES_HOME` (`~/.hermes/`); `default` is reserved and cannot be created — `hermes profile create default` fails with "Cannot create a profile named 'default'". Create nothing. Write the synthesized persona directly to `$HERMES_HOME/SOUL.md`, then set its routing description with `hermes profile describe default --text "…"`. Because this replaces the identity of the running agent itself — read fresh on each message — it takes effect live, with no restart.
+
+**For a named profile:**
 1. Create the profile:
    ```bash
    hermes profile create <name> --description "Role summary for task decomposition"
