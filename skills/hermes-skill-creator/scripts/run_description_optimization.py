@@ -307,6 +307,7 @@ def main():
     parser.add_argument("--runs-per-query", type=int, default=3, help="Runs per query for a reliable trigger rate")
     parser.add_argument("--seed", type=int, default=None, help="Random seed for the train/test split")
     parser.add_argument("--timeout", type=int, default=120, help="Per-query engine timeout in seconds")
+    parser.add_argument("--out-dir", default=".", help="Directory for the report files (default: current directory)")
     args = parser.parse_args()
 
     # Preflight: resolve the engine before any query
@@ -511,13 +512,15 @@ def main():
         "history": history,
     }
 
-    json_path = skill_path / "description_optimization_report.json"
+    out_dir = Path(args.out_dir).expanduser()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    json_path = out_dir / "description_optimization_report.json"
     with open(json_path, "w") as f:
         json.dump(report, f, indent=2)
     print(f"\nJSON report written to {json_path}")
 
     try:
-        html_path = skill_path / "description_optimization_report.html"
+        html_path = out_dir / "description_optimization_report.html"
         html_path.write_text(generate_html(report, skill_name=skill_name))
         print(f"HTML report written to {html_path}")
     except Exception as e:
