@@ -48,15 +48,54 @@ Gates 1, 3 and 4 run in CI on every push. Gate 2 lives in the skill's own `evals
 
 ---
 
-## Install
+## Install a skill into Hermes
 
-**One skill** — install it straight from this repo's path:
+Skills install straight from this repo — no clone needed. Hermes pulls the **whole skill
+directory** (`SKILL.md`, `references/`, `assets/`, `scripts/`, `agents/`, `eval-viewer/`,
+`evals/`), not just `SKILL.md`.
+
+Preview one without installing:
 
 ```bash
-hermes skills install sentenza/hermes-skills-foundry/skills/<skill-name>
+hermes skills inspect sentenza/hermes-skills-foundry/skills/<skill-name>
 ```
 
-**Clone the whole foundry** — useful if you want to read, run the evals, or contribute:
+Install it:
+
+```bash
+hermes skills install sentenza/hermes-skills-foundry/skills/<skill-name> --category <category> -y
+```
+
+- `--category` chooses the folder under `~/.hermes/skills/` (for example `software-development`);
+  without it Hermes picks one.
+- `-y` skips the confirmation prompt (needed in TUI mode).
+
+Confirm it is actually live — a passing frontmatter check says nothing about whether the skill is
+installed or enabled:
+
+```bash
+hermes skills list --enabled-only      # what a session will really load
+```
+
+Register the repo as a source if you want `update` to track it:
+
+```bash
+hermes skills tap add sentenza/hermes-skills-foundry
+```
+
+After a push to this repo, refresh your installed copy — a push is not a deploy, and the repo is the
+source of truth:
+
+```bash
+hermes skills update <skill-name>
+```
+
+Do not edit the installed copy under `~/.hermes/skills/` in place: the next `update` overwrites it.
+Change the repo here, push, then update.
+
+### Clone the whole foundry
+
+Useful if you want to read the skills, run the gate, or contribute:
 
 ```bash
 git clone https://github.com/sentenza/hermes-skills-foundry.git
@@ -64,7 +103,7 @@ cd hermes-skills-foundry
 python3 scripts/validate.py          # run the same gate CI runs
 ```
 
-Then point Hermes at a single skill directory, or copy it into `~/.hermes/skills/`.
+You can also point Hermes at a single skill directory, or copy it into `~/.hermes/skills/`.
 
 ---
 

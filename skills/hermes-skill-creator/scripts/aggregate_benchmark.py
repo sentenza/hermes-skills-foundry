@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Derived from anthropics/skills skill-creator (Apache-2.0);
-# modified for the Hermes Agent. See the NOTICE file in this skill directory.
+# Copyright 2026 Alfredo Torre (sentenza).
+# Derived from anthropics/skills skill-creator (Apache-2.0); modified for the Hermes Agent. See NOTICE.
 """
 Aggregate individual run results into benchmark summary statistics.
 

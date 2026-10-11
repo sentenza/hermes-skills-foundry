@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# Derived from anthropics/skills skill-creator (Apache-2.0);
-# modified for the Hermes Agent. See the NOTICE file in this skill directory.
+# Copyright 2026 Alfredo Torre (sentenza).
+# Derived from anthropics/skills skill-creator (Apache-2.0); modified for the Hermes Agent. See NOTICE.
 """Generate an HTML report from run_loop.py output.
 
 Takes the JSON output from run_loop.py and generates a visual HTML report
