@@ -33,6 +33,13 @@ skills/<skill-name>/
 - `tags` — classification tags.
 - `hermes_requires: ">=X.Y"` — an explicit semver constraint (never `latest` or `*`).
 
+## 2b. No external requirement
+
+A skill MUST NOT depend on an external code assistant or CLI to accomplish its
+job. The Hermes agent is the engine. If a skill optionally integrates such a
+tool, make it opt-in and configurable, document it, and make sure the skill still
+works — and says so honestly — when the tool is not installed.
+
 ## 3. Evals fixture
 
 Ship `evals/prompts.md` and `evals/results.json`. The result `status` is either `complete`, with

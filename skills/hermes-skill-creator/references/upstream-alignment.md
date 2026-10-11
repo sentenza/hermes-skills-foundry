@@ -72,7 +72,7 @@ Rewrite for Hermes (engine-coupled):
 
 - `scripts/run_eval.py`, `scripts/run_loop.py`, `scripts/improve_description.py`
   — hardwired to `claude -p` and `.claude/commands/`. Replace with the
-  agy-backed `scripts/run_description_optimization.py` (splits train/test,
+  engine-agnostic `scripts/run_description_optimization.py` (splits train/test,
   `--runs-per-query` for a reliable trigger rate, picks best by *test* score,
   emits a `generate_report.py`-compatible history + HTML).
 - `scripts/package_skill.py` — fix the import (`sys.path.insert` to the sibling
