@@ -1,0 +1,45 @@
+# Profile distribution manifest
+# Used by 'hermes profile install' and 'hermes profile update'
+
+# Profile identifier matching ^[a-z0-9][a-z0-9-]*$
+name: example-profile
+
+# Semantic version of the distribution
+version: 0.1.0
+
+# Summary of profile capabilities and operational role
+description: Autonomous system engineer and infrastructure specialist.
+
+# Hermes agent runtime compatibility range (semver constraint; e.g. ">=0.20", "^0.20.1")
+# Prohibited values: "latest", "*"
+hermes_requires: ">=0.20"
+
+# Maintainer name and contact email
+author: Hermes Developer <dev@example.com>
+
+# SPDX license identifier
+license: MIT
+
+# Environment variable requirements
+env_requires:
+  - name: GITHUB_TOKEN
+    description: Personal access token with repository scope for issue and PR management.
+    required: true
+    default: ""
+
+# Allowlist of files and directories managed and updated by this distribution.
+# Only paths explicitly listed here are updated or overwritten during distribution updates.
+# WARNING: NEVER list secrets, credentials, or runtime state in distribution_owned:
+# - .env or API credentials
+# - memories/ (persistent agent/user memories)
+# - sessions/ (conversation transcripts)
+# - cache/ (temporary cache files)
+# - backups/ (profile backups)
+# - workspace/ (local working trees)
+distribution_owned:
+  - SOUL.md
+  - config.yaml
+  - mcp.json
+  - skills/
+  - cron/
+  - distribution.yaml
