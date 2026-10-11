@@ -1,0 +1,34 @@
+hermes-skill-creator
+Copyright 2026 Alfredo Torre (sentenza)
+
+This product includes software developed as part of the "skill-creator" skill
+from the anthropics/skills repository (https://github.com/anthropics/skills),
+licensed under the Apache License, Version 2.0.
+
+The files listed below are derived from that work and have been MODIFIED for
+the Hermes Agent:
+
+  SKILL.md                          rewritten for Hermes conventions
+  scripts/aggregate_benchmark.py    modified
+  scripts/generate_report.py        modified
+  scripts/package_skill.py          modified
+  scripts/quick_validate.py         modified
+  scripts/utils.py                  modified
+  eval-viewer/generate_review.py    modified
+  eval-viewer/viewer.html           modified
+  references/schemas.md             modified
+  assets/eval_review.html           modified
+  agents/analyzer.md                modified
+  agents/comparator.md              modified
+  agents/grader.md                  modified
+
+Nature of the modifications: the upstream evaluation tooling was hardwired to
+the Claude CLI (`claude -p`) and Claude Code subagents. It has been adapted to
+the `agy` (antigravity CLI) engine and to Hermes `delegate_task` for parallel
+evaluation, and to Hermes skill conventions and frontmatter. Upstream
+`run_eval.py`, `run_loop.py` and `improve_description.py` were merged and
+rewritten into `scripts/run_description_optimization.py`, which is a new file
+and not derived from upstream.
+
+A copy of the Apache License, Version 2.0 is provided in LICENSE-APACHE-2.0 in
+this directory.

@@ -5,7 +5,9 @@ Validates skills against repository standards:
 1. Structure: SKILL.md presence, valid YAML frontmatter, naming and length constraints.
 2. Provenance: Attribution header for ported skills.
 3. Compatibility: Declared hermes_requires version range.
-4. Reference integrity: Referenced files in references/ and assets/ exist on disk.
+4. Reference integrity: Referenced files in references/, assets/, and supporting
+   dirs (scripts/, agents/, eval-viewer/) exist on disk — in SKILL.md for all
+   dirs, and in references/*.md and agents/*.md for references/ and assets/.
 """
 
 import argparse
@@ -17,8 +19,15 @@ import sys
 NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 # Attribution line pattern: adapted from <repo> (<LICENSE>)
 ATTRIBUTION_PATTERN = re.compile(r"adapted from\s+\S+\s*\([^)]+\)", re.IGNORECASE)
-# Reference link pattern under references/ or assets/
+# Reference link pattern under references/, assets/, or supporting dirs
 REFERENCE_PATTERN = re.compile(
+    r"(?:(?:\./)?(?:references|assets|scripts|agents|eval-viewer)/[a-zA-Z0-9_.-]+[^\s)\]`\"'>]*)"
+)
+# Documentation cross-links (references/ and assets/) may be named from any skill
+# markdown file, not only SKILL.md, and MUST always resolve. scripts/, agents/ and
+# eval-viewer/ are checked in SKILL.md only: reference docs legitimately name
+# upstream script paths that do not exist in this skill.
+DOC_REFERENCE_PATTERN = re.compile(
     r"(?:(?:\./)?(?:references|assets)/[a-zA-Z0-9_.-]+[^\s)\]`\"'>]*)"
 )
 
@@ -80,6 +89,26 @@ def parse_frontmatter(content):
         data[current_key] = " ".join(current_val_lines).strip()
 
     return data, fm_text, body_text, lines_after_fm
+
+
+def check_reference_paths(skill_dir, text, pattern, source, checked):
+    """Verify every path matched by `pattern` exists under `skill_dir`.
+
+    Returns:
+        list: Failure messages for paths that do not resolve.
+    """
+    errors = []
+    for raw_ref in pattern.findall(text):
+        clean_ref = re.sub(r"^\./", "", raw_ref).split("#")[0].split("?")[0]
+        clean_ref = clean_ref.rstrip(".,;:)'\"]")
+        if not clean_ref or clean_ref in checked:
+            continue
+        checked.add(clean_ref)
+        if not os.path.exists(os.path.join(skill_dir, clean_ref)):
+            errors.append(
+                f"Referenced path '{clean_ref}' does not exist on disk (from {source})"
+            )
+    return errors
 
 
 def validate_skill(skill_dir, verbose=False):
@@ -171,19 +200,33 @@ def validate_skill(skill_dir, verbose=False):
             "Missing 'hermes_requires' declaration in frontmatter or distribution.yaml"
         )
 
-    # Gate 1: Reference integrity - Path verification
-    raw_refs = REFERENCE_PATTERN.findall(body)
+    # Gate 1: Reference integrity - paths named in SKILL.md (all supporting dirs)
     checked_refs = set()
-    for raw_ref in raw_refs:
-        clean_ref = re.sub(r"^\./", "", raw_ref).split("#")[0].split("?")[0]
-        clean_ref = clean_ref.rstrip(".,;:)'\"]")
-        if not clean_ref or clean_ref in checked_refs:
-            continue
-        checked_refs.add(clean_ref)
+    errors.extend(
+        check_reference_paths(skill_dir, body, REFERENCE_PATTERN, "SKILL.md", checked_refs)
+    )
 
-        ref_target = os.path.join(skill_dir, clean_ref)
-        if not os.path.exists(ref_target):
-            errors.append(f"Referenced path '{clean_ref}' does not exist on disk")
+    # Gate 1: Reference integrity - documentation cross-links named inside the
+    # supporting markdown files (references/*.md, agents/*.md). Only the
+    # documentation directories are checked here; scripts/, agents/ and
+    # eval-viewer/ are validated in SKILL.md (see DOC_REFERENCE_PATTERN).
+    for rel_dir in ("references", "agents"):
+        doc_dir = os.path.join(skill_dir, rel_dir)
+        if not os.path.isdir(doc_dir):
+            continue
+        for name in sorted(os.listdir(doc_dir)):
+            if not name.endswith(".md"):
+                continue
+            try:
+                with open(os.path.join(doc_dir, name), "r", encoding="utf-8") as dfh:
+                    doc_text = dfh.read()
+            except Exception:
+                continue
+            errors.extend(
+                check_reference_paths(
+                    skill_dir, doc_text, DOC_REFERENCE_PATTERN, f"{rel_dir}/{name}", checked_refs
+                )
+            )
 
     return errors
 
