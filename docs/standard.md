@@ -120,3 +120,5 @@ Admission to the repository requires satisfying four mandatory gates:
 2. **Behaviour Gate**: The skill MUST provide an actual eval fixture in `evals/` (`prompts.md` and `results.json`). A recorded, measured pass rate is expected for objectively verifiable skills; for document- or judgment-producing skills an honest `pending` status, with the reason stated, satisfies the gate. Fabricated, padded, or non-discriminating results do not.
 3. **Provenance Gate**: If the skill is ported, it MUST include a valid attribution header and upstream licence citation immediately beneath the frontmatter.
 4. **Compatibility Gate**: The skill MUST declare an explicit, tested `hermes_requires` version constraint.
+
+> The step-by-step procedure for landing a skill in this repository ships with the [`hermes-skill-creator`](../skills/hermes-skill-creator/) skill, at [`references/foundry-contribution.md`](../skills/hermes-skill-creator/references/foundry-contribution.md). This document remains the normative rule; the skill's reference is the operational procedure.
