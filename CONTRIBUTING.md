@@ -13,7 +13,7 @@ The gate comes before the skill. A contribution that does not pass `scripts/vali
 Every new skill contribution must include:
 
 - A dedicated skill directory under `skills/<name>/` containing `SKILL.md` with complete YAML frontmatter.
-- An `evals/` directory within the skill folder, containing evaluation prompts and recorded results.
+- An `evals/` directory within the skill folder, containing evaluation prompts and a `results.json` (a measured pass rate, or an honest `pending` status with the reason).
 - An attribution header placed immediately under the frontmatter if the skill is ported from another harness.
 - A one-line entry added to the Skills table in `README.md`.
 
@@ -34,17 +34,21 @@ Pass `--verbose` to inspect detailed validation output.
 All skills must pass four distinct gates before admission:
 
 - **Structure**: `SKILL.md` frontmatter, naming conventions, and internal file references must validate cleanly via `scripts/validate.py`.
-- **Behaviour**: Realistic evals must be defined in `evals/`, executed, and documented with verifiable pass criteria.
-- **Provenance**: Any ported content must clearly cite its origin repository and upstream licence.
+- **Behaviour**: An eval fixture must be defined in `evals/` (`prompts.md` and `results.json`). A measured pass rate is documented for objectively verifiable skills; where the deliverable is itself a document or a judgement, an honest `pending` status with the reason satisfies the gate.
+- **Provenance**: Any ported content must cite its origin repository and upstream licence, ship that licence text, and include a `NOTICE` of modifications.
 - **Compatibility**: Every skill must declare an explicit `hermes_requires` range tested against supported Hermes releases.
+
+> The practical, step-by-step procedure for contributing a skill ships with the `hermes-skill-creator` skill: [`skills/hermes-skill-creator/references/foundry-contribution.md`](skills/hermes-skill-creator/references/foundry-contribution.md). This guide is the rule; that reference is the procedure.
 
 ## Porting Rules
 
-Skills adapted from external agent frameworks (such as Claude Code, OpenClaw, Codex, or pi) are welcome, subject to three strict requirements:
+Skills adapted from external agent frameworks (such as Claude Code, OpenClaw, Codex, or pi) are welcome, subject to five strict requirements:
 
 1. Place an `adapted from <repo> (<LICENSE>)` header immediately under the YAML frontmatter.
-2. Rewrite instructions and tool patterns to Hermes conventions rather than copying upstream text verbatim.
-3. Never port material from a repository that carries no licence.
+2. Ship the upstream licence text in the skill directory and a `NOTICE` naming the upstream, its licence, the derived files, and the modifications.
+3. Mark every modified file with a prominent change notice.
+4. Rewrite instructions and tool patterns to Hermes conventions rather than copying upstream text verbatim.
+5. Never port material from a repository that carries no licence.
 
 ## Licence and Inbound Equals Outbound
 
