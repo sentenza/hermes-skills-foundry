@@ -1,0 +1,14 @@
+name: agy-antigravity-cli
+version: 0.1.0
+description: Run, script, and troubleshoot the Antigravity `agy` CLI, and diagnose runs that exit 0 with empty output.
+hermes_requires: ">=0.21"
+author: sentenza
+license: MIT
+requires_agy: true
+agy_version_tested: "1.4.0"
+distribution_owned:
+  - SKILL.md
+  - references
+  - scripts
+  - evals
+  - distribution.yaml
