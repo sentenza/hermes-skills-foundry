@@ -37,6 +37,7 @@ All skills must pass four distinct gates before admission:
 - **Behaviour**: An eval fixture must be defined in `evals/` (`prompts.md` and `results.json`). A measured pass rate is documented for objectively verifiable skills; where the deliverable is itself a document or a judgement, an honest `pending` status with the reason satisfies the gate.
 - **Provenance**: Any ported content must cite its origin repository and upstream licence, ship that licence text, and include a `NOTICE` of modifications.
 - **Compatibility**: Every skill must declare an explicit `hermes_requires` range tested against supported Hermes releases.
+- **Adapter skills (exception)**: a skill whose declared purpose is to pilot or operate an external coding agent may depend on it — but it must state the dependency and a `command -v <tool>` preflight up front, keep the engine configurable (for example `AGY_BIN`), and report plainly — never a success claim — when the tool is absent.
 
 > The practical, step-by-step procedure for contributing a skill ships with the `hermes-skill-creator` skill: [`skills/hermes-skill-creator/references/foundry-contribution.md`](skills/hermes-skill-creator/references/foundry-contribution.md). This guide is the rule; that reference is the procedure.
 
