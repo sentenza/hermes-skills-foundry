@@ -8,7 +8,7 @@
     {
       "id": 1,
       "name": "delegate-codegen-to-gemini",
-      "prompt": "Voglio usare agy per generare uno script Python che scarica i prezzi crypto. Usa Gemini 3.8 Flash (Medium) e salva il file in `workspace/crypto_prices.py`. Deve usare solo la standard library di Python e chiamare l'API di CoinGecko. Poi verifica che il file sia stato effettivamente creato.",
+      "prompt": "I want to use agy to generate a Python script that downloads crypto prices. Use Gemini 3.8 Flash (Medium) and save the file in `workspace/crypto_prices.py`. It must only use the Python standard library and call the CoinGecko API. Then verify that the file was actually created.",
       "expectations": [
         {"text": "The agy command uses --print for non-interactive execution rather than interactive mode (-i)", "passed": false, "evidence": "not yet run"},
         {"text": "The agy command specifies the exact model string 'Gemini 3.8 Flash (Medium)' with proper casing and tier suffix", "passed": false, "evidence": "not yet run"},
@@ -20,7 +20,7 @@
     {
       "id": 2,
       "name": "query-available-models",
-      "prompt": "Quali modelli Gemini sono disponibili in agy? Devo usare la variante di qualità più alta per un task di analisi complesso. Prima controlla cosa è realmente disponibile, poi dimmi come usarlo. Non voglio Claude né GPT.",
+      "prompt": "Which Gemini models are available in agy? I need to use the highest quality variant for a complex analysis task. First check what is actually available, then tell me how to use it. I don't want Claude or GPT.",
       "expectations": [
         {"text": "Hermes runs agy models to check what the installed CLI actually offers before delegating", "passed": false, "evidence": "not yet run"},
         {"text": "The agy command uses the exact case-sensitive model string 'Gemini 3.8 Flash (High)' and its tier suffix", "passed": false, "evidence": "not yet run"},
@@ -32,7 +32,7 @@
     {
       "id": 3,
       "name": "troubleshoot-long-run-and-plugin",
-      "prompt": "Ho un task che richiede più di 5 minuti e devo eseguirlo con agy usando `Gemini 3.8 Flash (High)`. Inoltre vorrei importare un plugin da Claude in agy: come posso fare? Infine, una precedente esecuzione non-interattiva è terminata con exit code 0 ma senza alcun output: perché è successo e come si risolve?",
+      "prompt": "I have a task that takes more than 5 minutes and I need to run it with agy using `Gemini 3.8 Flash (High)`. Also, I would like to import a plugin from Claude into agy: how can I do that? Finally, a previous non-interactive run terminated with exit code 0 but without any output: why did that happen and how do I fix it?",
       "expectations": [
         {"text": "Response recommends --print-timeout 0 to allow the turn to complete and explains that any finite timeout cuts execution mid-turn while still exiting 0", "passed": false, "evidence": "not yet run"},
         {"text": "Response provides the exact command agy plugin import claude to import the plugin", "passed": false, "evidence": "not yet run"},
