@@ -15,7 +15,7 @@ This test suite defines evaluation scenarios for `agy-antigravity-cli` covering 
 
 ### User Prompt
 
-> Voglio usare agy per generare uno script Python che scarica i prezzi crypto. Usa Gemini 3.8 Flash (Medium) e salva il file in `workspace/crypto_prices.py`. Deve usare solo la standard library di Python e chiamare l'API di CoinGecko. Poi verifica che il file sia stato effettivamente creato.
+> I want to use agy to generate a Python script that downloads crypto prices. Use Gemini 3.8 Flash (Medium) and save the file in `workspace/crypto_prices.py`. It must only use the Python standard library and call the CoinGecko API. Then verify that the file was actually created.
 
 ### Acceptance Assertions
 
@@ -35,7 +35,7 @@ This test suite defines evaluation scenarios for `agy-antigravity-cli` covering 
 
 ### User Prompt
 
-> Quali modelli Gemini sono disponibili in agy? Devo usare la variante di qualità più alta per un task di analisi complesso. Prima controlla cosa è realmente disponibile, poi dimmi come usarlo. Non voglio Claude né GPT.
+> Which Gemini models are available in agy? I need to use the highest quality variant for a complex analysis task. First check what is actually available, then tell me how to use it. I don't want Claude or GPT.
 
 ### Acceptance Assertions
 
@@ -53,7 +53,7 @@ This test suite defines evaluation scenarios for `agy-antigravity-cli` covering 
 
 ### User Prompt
 
-> Ho un task che richiede più di 5 minuti e devo eseguirlo con agy usando `Gemini 3.8 Flash (High)`. Inoltre vorrei importare un plugin da Claude in agy: come posso fare? Infine, una precedente esecuzione non-interattiva è terminata con exit code 0 ma senza alcun output: perché è successo e come si risolve?
+> I have a task that takes more than 5 minutes and I need to run it with agy using `Gemini 3.8 Flash (High)`. Also, I would like to import a plugin from Claude into agy: how can I do that? Finally, a previous non-interactive run terminated with exit code 0 but without any output: why did that happen and how do I fix it?
 
 ### Acceptance Assertions
 
