@@ -1,0 +1,45 @@
+{
+  "skill": "agy-antigravity-cli",
+  "status": "pending",
+  "reason": "Assertions require a live agy install with an authenticated Antigravity account; a with/without benchmark cannot be run on a stock Hermes install, which is this repository's compatibility baseline.",
+  "tested_hermes_version": "0.22.2",
+  "model": null,
+  "prompts": [
+    {
+      "id": 1,
+      "name": "delegate-codegen-to-gemini",
+      "prompt": "Voglio usare agy per generare uno script Python che scarica i prezzi crypto. Usa Gemini 3.8 Flash (Medium) e salva il file in `workspace/crypto_prices.py`. Deve usare solo la standard library di Python e chiamare l'API di CoinGecko. Poi verifica che il file sia stato effettivamente creato.",
+      "expectations": [
+        {"text": "The agy command uses --print for non-interactive execution rather than interactive mode (-i)", "passed": false, "evidence": "not yet run"},
+        {"text": "The agy command specifies the exact model string 'Gemini 3.8 Flash (Medium)' with proper casing and tier suffix", "passed": false, "evidence": "not yet run"},
+        {"text": "The delegation prompt to agy explicitly specifies the target path workspace/crypto_prices.py", "passed": false, "evidence": "not yet run"},
+        {"text": "Hermes verifies file creation by reading the file back rather than trusting agy's output claim", "passed": false, "evidence": "not yet run"},
+        {"text": "The generated Python script uses only the standard library and cleanly interfaces with the CoinGecko API", "passed": false, "evidence": "not yet run"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "query-available-models",
+      "prompt": "Quali modelli Gemini sono disponibili in agy? Devo usare la variante di qualità più alta per un task di analisi complesso. Prima controlla cosa è realmente disponibile, poi dimmi come usarlo. Non voglio Claude né GPT.",
+      "expectations": [
+        {"text": "Hermes runs agy models to check what the installed CLI actually offers before delegating", "passed": false, "evidence": "not yet run"},
+        {"text": "The agy command uses the exact case-sensitive model string 'Gemini 3.8 Flash (High)' and its tier suffix", "passed": false, "evidence": "not yet run"},
+        {"text": "Response suggests only models that agy models listed, and mentions neither Claude nor GPT", "passed": false, "evidence": "not yet run"},
+        {"text": "The agy execution command uses --print for non-interactive execution rather than interactive mode", "passed": false, "evidence": "not yet run"},
+        {"text": "The response does not claim a Pro or other tier exists when agy models did not list one", "passed": false, "evidence": "not yet run"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "troubleshoot-long-run-and-plugin",
+      "prompt": "Ho un task che richiede più di 5 minuti e devo eseguirlo con agy usando `Gemini 3.8 Flash (High)`. Inoltre vorrei importare un plugin da Claude in agy: come posso fare? Infine, una precedente esecuzione non-interattiva è terminata con exit code 0 ma senza alcun output: perché è successo e come si risolve?",
+      "expectations": [
+        {"text": "Response recommends --print-timeout 0 to allow the turn to complete and explains that any finite timeout cuts execution mid-turn while still exiting 0", "passed": false, "evidence": "not yet run"},
+        {"text": "Response provides the exact command agy plugin import claude to import the plugin", "passed": false, "evidence": "not yet run"},
+        {"text": "Response explains that empty output with exit 0 in headless runs is caused by auto-denied permission prompts and provides the --dangerously-skip-permissions fix", "passed": false, "evidence": "not yet run"},
+        {"text": "All agy command examples specify Gemini models exclusively with proper casing and tier syntax", "passed": false, "evidence": "not yet run"},
+        {"text": "The explanation clearly differentiates between silent timeout turn truncation and headless permission denial as separate causes for empty runs", "passed": false, "evidence": "not yet run"}
+      ]
+    }
+  ]
+}

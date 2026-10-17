@@ -40,6 +40,14 @@ job. The Hermes agent is the engine. If a skill optionally integrates such a
 tool, make it opt-in and configurable, document it, and make sure the skill still
 works — and says so honestly — when the tool is not installed.
 
+**Adapter skills (exception).** A skill whose declared purpose is to pilot or operate an
+external coding agent is the one legitimate exception to §2b. It MAY require that agent,
+provided it (a) states the dependency explicitly with a `command -v <tool>` preflight as its
+first workflow step, (b) keeps the engine configurable — an explicit binary/env override such
+as `AGY_BIN`, never a hardcoded absolute path — and (c) documents that it is inert without the
+tool and reports that plainly instead of a success claim. It must never report success when the
+tool is absent.
+
 ## 3. Evals fixture
 
 Ship `evals/prompts.md` and `evals/results.json`. The result `status` is either `complete`, with

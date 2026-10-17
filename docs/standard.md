@@ -119,6 +119,24 @@ Admission to the repository requires satisfying four mandatory gates:
 1. **Structure Gate**: The skill MUST adhere to the directory layout, YAML frontmatter schema, length constraints, naming rules, and reference integrity checked by `scripts/validate.py`.
 2. **Behaviour Gate**: The skill MUST provide an actual eval fixture in `evals/` (`prompts.md` and `results.json`). A recorded, measured pass rate is expected for objectively verifiable skills; for document- or judgment-producing skills an honest `pending` status, with the reason stated, satisfies the gate. Fabricated, padded, or non-discriminating results do not.
 3. **Provenance Gate**: If the skill is ported, it MUST include a valid attribution header and upstream licence citation immediately beneath the frontmatter.
-4. **Compatibility Gate**: The skill MUST declare an explicit, tested `hermes_requires` version constraint, and MUST NOT require an external code assistant (`agy`, `opencode`, `claude`, …) or any other CLI to do its work. Any such integration MUST be optional and configurable, and the skill MUST remain usable on a stock Hermes install; a skill MUST NOT report success when an optional tool it needs is absent.
+4. **Compatibility Gate**: The skill MUST declare an explicit, tested `hermes_requires`
+   version constraint and MUST remain usable on a stock Hermes install. A skill MUST NOT
+   silently require an external code assistant (`agy`, `opencode`, `claude`, …) or any
+   other CLI to do its work.
+
+   **Exception — adapter skills.** A skill whose declared purpose is to pilot or operate an
+   external coding agent (an *adapter* skill) MAY depend on that agent, provided it:
+
+   - states the dependency explicitly (a Prerequisites section and a `command -v <tool>`
+     preflight as the first workflow step);
+   - keeps the engine configurable (an explicit binary/env override such as `AGY_BIN`,
+     never a hardcoded absolute path);
+   - documents that it is inert without the tool and reports that plainly, rather than a
+     success claim; and
+   - never reports success when the tool is absent.
+
+   Every other skill keeps the default rule: any such integration MUST be optional and
+   configurable, and the skill MUST keep working — and say so honestly — when the tool is
+   not installed.
 
 > The step-by-step procedure for landing a skill in this repository ships with the [`hermes-skill-creator`](../skills/hermes-skill-creator/) skill, at [`references/foundry-contribution.md`](../skills/hermes-skill-creator/references/foundry-contribution.md). This document remains the normative rule; the skill's reference is the operational procedure.
