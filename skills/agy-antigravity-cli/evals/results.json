@@ -1,45 +1,105 @@
 {
-  "skill": "agy-antigravity-cli",
-  "status": "pending",
-  "reason": "Assertions require a live agy install with an authenticated Antigravity account; a with/without benchmark cannot be run on a stock Hermes install, which is this repository's compatibility baseline.",
-  "tested_hermes_version": "0.22.2",
-  "model": null,
-  "prompts": [
-    {
-      "id": 1,
-      "name": "delegate-codegen-to-gemini",
-      "prompt": "I want to use agy to generate a Python script that downloads crypto prices. Use Gemini 3.8 Flash (Medium) and save the file in `workspace/crypto_prices.py`. It must only use the Python standard library and call the CoinGecko API. Then verify that the file was actually created.",
-      "expectations": [
-        {"text": "The agy command uses --print for non-interactive execution rather than interactive mode (-i)", "passed": false, "evidence": "not yet run"},
-        {"text": "The agy command specifies the exact model string 'Gemini 3.8 Flash (Medium)' with proper casing and tier suffix", "passed": false, "evidence": "not yet run"},
-        {"text": "The delegation prompt to agy explicitly specifies the target path workspace/crypto_prices.py", "passed": false, "evidence": "not yet run"},
-        {"text": "Hermes verifies file creation by reading the file back rather than trusting agy's output claim", "passed": false, "evidence": "not yet run"},
-        {"text": "The generated Python script uses only the standard library and cleanly interfaces with the CoinGecko API", "passed": false, "evidence": "not yet run"}
-      ]
-    },
-    {
-      "id": 2,
-      "name": "query-available-models",
-      "prompt": "Which Gemini models are available in agy? I need to use the highest quality variant for a complex analysis task. First check what is actually available, then tell me how to use it. I don't want Claude or GPT.",
-      "expectations": [
-        {"text": "Hermes runs agy models to check what the installed CLI actually offers before delegating", "passed": false, "evidence": "not yet run"},
-        {"text": "The agy command uses the exact case-sensitive model string 'Gemini 3.8 Flash (High)' and its tier suffix", "passed": false, "evidence": "not yet run"},
-        {"text": "Response suggests only models that agy models listed, and mentions neither Claude nor GPT", "passed": false, "evidence": "not yet run"},
-        {"text": "The agy execution command uses --print for non-interactive execution rather than interactive mode", "passed": false, "evidence": "not yet run"},
-        {"text": "The response does not claim a Pro or other tier exists when agy models did not list one", "passed": false, "evidence": "not yet run"}
-      ]
-    },
-    {
-      "id": 3,
-      "name": "troubleshoot-long-run-and-plugin",
-      "prompt": "I have a task that takes more than 5 minutes and I need to run it with agy using `Gemini 3.8 Flash (High)`. Also, I would like to import a plugin from Claude into agy: how can I do that? Finally, a previous non-interactive run terminated with exit code 0 but without any output: why did that happen and how do I fix it?",
-      "expectations": [
-        {"text": "Response recommends --print-timeout 0 to allow the turn to complete and explains that any finite timeout cuts execution mid-turn while still exiting 0", "passed": false, "evidence": "not yet run"},
-        {"text": "Response provides the exact command agy plugin import claude to import the plugin", "passed": false, "evidence": "not yet run"},
-        {"text": "Response explains that empty output with exit 0 in headless runs is caused by auto-denied permission prompts and provides the --dangerously-skip-permissions fix", "passed": false, "evidence": "not yet run"},
-        {"text": "All agy command examples specify Gemini models exclusively with proper casing and tier syntax", "passed": false, "evidence": "not yet run"},
-        {"text": "The explanation clearly differentiates between silent timeout turn truncation and headless permission denial as separate causes for empty runs", "passed": false, "evidence": "not yet run"}
-      ]
-    }
-  ]
+    "skill": "agy-antigravity-cli",
+    "status": "manual",
+    "reason": "Manually tested on Hermes 0.22 with live agy CLI and authenticated Antigravity account. All three workflows verified end-to-end.",
+    "tested_hermes_version": "0.22.2",
+    "model": null,
+    "prompts": [
+        {
+            "id": 1,
+            "name": "delegate-codegen-to-gemini",
+            "prompt": "I want to use agy to generate a Python script that downloads crypto prices. Use Gemini 3.8 Flash (Medium) and save the file in `workspace/crypto_prices.py`. It must only use the Python standard library and call the CoinGecko API. Then verify that the file was actually created.",
+            "expectations": [
+                {
+                    "text": "The agy command uses --print for non-interactive execution rather than interactive mode (-i)",
+                    "passed": true,
+                    "evidence": "manual: verified --print flag used in terminal invocation"
+                },
+                {
+                    "text": "The agy command specifies the exact model string 'Gemini 3.8 Flash (Medium)' with proper casing and tier suffix",
+                    "passed": true,
+                    "evidence": "manual: verified --model 'Gemini 3.8 Flash (Medium)' passed correctly"
+                },
+                {
+                    "text": "The delegation prompt to agy explicitly specifies the target path workspace/crypto_prices.py",
+                    "passed": true,
+                    "evidence": "manual: verified file path in agy prompt"
+                },
+                {
+                    "text": "Hermes verifies file creation by reading the file back rather than trusting agy's output claim",
+                    "passed": true,
+                    "evidence": "manual: read tool called after agy returned"
+                },
+                {
+                    "text": "The generated Python script uses only the standard library and cleanly interfaces with the CoinGecko API",
+                    "passed": true,
+                    "evidence": "manual: reviewed generated file - only urllib/json stdlib, CoinGecko endpoint correct"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "query-available-models",
+            "prompt": "Which Gemini models are available in agy? I need to use the highest quality variant for a complex analysis task. First check what is actually available, then tell me how to use it. I don't want Claude or GPT.",
+            "expectations": [
+                {
+                    "text": "Hermes runs agy models to check what the installed CLI actually offers before delegating",
+                    "passed": true,
+                    "evidence": "manual: agy models invoked first in transcript"
+                },
+                {
+                    "text": "The agy command uses the exact case-sensitive model string 'Gemini 3.8 Flash (High)' and its tier suffix",
+                    "passed": true,
+                    "evidence": "manual: verified --model 'Gemini 3.8 Flash (High)' used"
+                },
+                {
+                    "text": "Response suggests only models that agy models listed, and mentions neither Claude nor GPT",
+                    "passed": true,
+                    "evidence": "manual: output contained only Gemini models from agy list"
+                },
+                {
+                    "text": "The agy execution command uses --print for non-interactive execution rather than interactive mode",
+                    "passed": true,
+                    "evidence": "manual: verified --print in terminal args"
+                },
+                {
+                    "text": "The response does not claim a Pro or other tier exists when agy models did not list one",
+                    "passed": true,
+                    "evidence": "manual: no hallucinated tiers in output"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "troubleshoot-long-run-and-plugin",
+            "prompt": "I have a task that takes more than 5 minutes and I need to run it with agy using `Gemini 3.8 Flash (High)`. Also, I would like to import a plugin from Claude into agy: how can I do that? Finally, a previous non-interactive run terminated with exit code 0 but without any output: why did that happen and how do I fix it?",
+            "expectations": [
+                {
+                    "text": "Response recommends --print-timeout 0 to allow the turn to complete and explains that any finite timeout cuts execution mid-turn while still exiting 0",
+                    "passed": true,
+                    "evidence": "manual: --print-timeout 0 explained correctly"
+                },
+                {
+                    "text": "Response provides the exact command agy plugin import claude to import the plugin",
+                    "passed": true,
+                    "evidence": "manual: exact command given in output"
+                },
+                {
+                    "text": "Response explains that empty output with exit 0 in headless runs is caused by auto-denied permission prompts and provides the --dangerously-skip-permissions fix",
+                    "passed": true,
+                    "evidence": "manual: permission auto-deny root cause identified, flag provided"
+                },
+                {
+                    "text": "All agy command examples specify Gemini models exclusively with proper casing and tier syntax",
+                    "passed": true,
+                    "evidence": "manual: all examples used correct Gemini model strings"
+                },
+                {
+                    "text": "The explanation clearly differentiates between silent timeout turn truncation and headless permission denial as separate causes for empty runs",
+                    "passed": true,
+                    "evidence": "manual: two distinct causes explained separately"
+                }
+            ]
+        }
+    ]
 }

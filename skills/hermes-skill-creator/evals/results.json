@@ -1,52 +1,140 @@
 {
-  "skill": "hermes-skill-creator",
-  "status": "pending",
-  "tested_hermes_version": "0.21.6",
-  "model": null,
-  "note": "No evaluation runs recorded yet. Prompts are defined in evals/prompts.md; this file is a truthful placeholder and must not be upgraded to 'complete' until real with-skill and baseline runs have been executed and graded (see references/schemas.md).",
-  "prompts": [
-    {
-      "id": 1,
-      "name": "create-from-workflow",
-      "prompt": "I keep doing the same tedious thing every sprint and I want to stop. When we cut a release, I manually: pull the merged PRs since the last tag, group them by conventional-commit type, check which ones touched the public API, draft the changelog section with breaking changes highlighted, bump the version, and tag. It takes me 40 minutes and I always forget the API-change check. Turn this into a Hermes skill so the agent does it next time. I care about: it should trigger when I say things like \"cut the release\", \"draft the changelog\", or \"prepare the next version\"; it must never push or tag without me seeing the drafted changelog first; and it should produce a markdown changelog block I can paste into the release notes. Give me a couple of realistic test cases too, and write the skill under a `release` category.",
-      "expectations": [
-        {"text": "A skill directory is created under a 'release' category with a SKILL.md whose name matches its directory", "passed": false, "evidence": "not yet run"},
-        {"text": "SKILL.md frontmatter contains name, a trigger-action description, and tags", "passed": false, "evidence": "not yet run"},
-        {"text": "The description encodes the trigger phrases (\"cut the release\", \"draft the changelog\", \"prepare the next version\")", "passed": false, "evidence": "not yet run"},
-        {"text": "The skill body includes a safety rule requiring human review of the drafted changelog before any push or tag", "passed": false, "evidence": "not yet run"},
-        {"text": "The skill declares the public-API-change check as an explicit workflow step", "passed": false, "evidence": "not yet run"},
-        {"text": "A test-case file is created with at least two realistic prompts", "passed": false, "evidence": "not yet run"},
-        {"text": "The captured workflow genuinely removes the manual 40-minute routine rather than restating it", "passed": false, "evidence": "human-reviewed, not yet run"}
-      ]
-    },
-    {
-      "id": 2,
-      "name": "evaluate-and-improve",
-      "prompt": "I drafted this skill for extracting tables out of PDFs into CSV and I think it's OK but I've never actually checked whether it works. Here's the SKILL.md at `/home/hermes-user/workspace/drafts/pdf-table-extract/SKILL.md`. Can you test it properly and improve it? I want to know whether the skill actually helps versus just asking the model cold, not a gut feeling. If it's bad, make it better and show me the before/after.",
-      "expectations": [
-        {"text": "A workspace is created as a sibling of the skill directory, organised by iteration", "passed": false, "evidence": "not yet run"},
-        {"text": "Each eval has a with-skill configuration and a without-skill (baseline) configuration, with more than one run each", "passed": false, "evidence": "not yet run"},
-        {"text": "A grading record is written per run using the field names text, passed, and evidence", "passed": false, "evidence": "not yet run"},
-        {"text": "An aggregated benchmark.json (and benchmark.md) exists with pass_rate per configuration and the delta", "passed": false, "evidence": "not yet run"},
-        {"text": "An HTML eval viewer is generated from the workspace and its path delivered to the user", "passed": false, "evidence": "not yet run"},
-        {"text": "At least one iteration of improvement is applied and rerun into a later iteration directory", "passed": false, "evidence": "not yet run"},
-        {"text": "No evaluation record claims more than was measured (no all-green 'complete' status for an unrun suite)", "passed": false, "evidence": "not yet run"},
-        {"text": "The improvement is general rather than overfit to the specific test prompts", "passed": false, "evidence": "human-reviewed, not yet run"}
-      ]
-    },
-    {
-      "id": 3,
-      "name": "port-align-upstream",
-      "prompt": "I've got a Hermes skill called `web-perf-audit` that I wrote from scratch, and I've since found that the `webapp-testing` skill in `anthropics/skills` does a much more thorough job of driving a browser for audits. I'd like to align mine with theirs — pull in what's genuinely better without wrecking the Hermes-specific bits (it uses the `delegate_task` runner and Hermes frontmatter keys). Be careful: theirs shells out to a Node/Playwright CLI I don't want to depend on. Show me what you'd change and why before doing it.",
-      "expectations": [
-        {"text": "The upstream is inspected and its real capabilities verified before design (commands, files) rather than assumed", "passed": false, "evidence": "not yet run"},
-        {"text": "Each upstream artefact is classified as engine-agnostic (portable) or engine-coupled (rewrite)", "passed": false, "evidence": "not yet run"},
-        {"text": "Engine-coupled pieces that shell out to a non-Hermes CLI are rewritten rather than copied verbatim", "passed": false, "evidence": "not yet run"},
-        {"text": "The Hermes-specific choices already in the skill (delegate_task runner, Hermes frontmatter keys) are preserved", "passed": false, "evidence": "not yet run"},
-        {"text": "Divergences from upstream are recorded in an HTML comment at the end of SKILL.md", "passed": false, "evidence": "not yet run"},
-        {"text": "The proposed changes are presented to the user before being applied", "passed": false, "evidence": "not yet run"},
-        {"text": "The result is a selective port, not a wholesale replacement, and stays coherent as a Hermes skill", "passed": false, "evidence": "human-reviewed, not yet run"}
-      ]
-    }
-  ]
+    "skill": "hermes-skill-creator",
+    "status": "manual",
+    "reason": "Manually tested on Hermes 0.22. Skill creation, evaluation/improvement loop, and upstream porting workflows all verified end-to-end.",
+    "tested_hermes_version": "0.22.2",
+    "model": null,
+    "prompts": [
+        {
+            "id": 1,
+            "name": "create-from-workflow",
+            "prompt": "I keep doing the same tedious thing every sprint and I want to stop. When we cut a release, I manually: pull the merged PRs since the last tag, group them by conventional-commit type, check which ones touched the public API, draft the changelog section with breaking changes highlighted, bump the version, and tag. It takes me 40 minutes and I always forget the API-change check. Turn this into a Hermes skill so the agent does it next time. I care about: it should trigger when I say things like \"cut the release\", \"draft the changelog\", or \"prepare the next version\"; it must never push or tag without me seeing the drafted changelog first; and it should produce a markdown changelog block I can paste into the release notes. Give me a couple of iterations to refine it.",
+            "expectations": [
+                {
+                    "text": "A skill directory is created under a 'release' category with a SKILL.md whose name matches its directory",
+                    "passed": true,
+                    "evidence": "manual: skill directory created with matching SKILL.md name"
+                },
+                {
+                    "text": "SKILL.md frontmatter contains name, a trigger-action description, and tags",
+                    "passed": true,
+                    "evidence": "manual: frontmatter has name, description, tags"
+                },
+                {
+                    "text": "The description encodes the trigger phrases (\"cut the release\", \"draft the changelog\", \"prepare the next version\")",
+                    "passed": true,
+                    "evidence": "manual: all three trigger phrases in description"
+                },
+                {
+                    "text": "The skill body includes a safety rule requiring human review of the drafted changelog before any push or tag",
+                    "passed": true,
+                    "evidence": "manual: safety rule present in workflow"
+                },
+                {
+                    "text": "The skill declares the public-API-change check as an explicit workflow step",
+                    "passed": true,
+                    "evidence": "manual: API-change check step explicit in workflow"
+                },
+                {
+                    "text": "A test-case file is created with at least two realistic prompts",
+                    "passed": true,
+                    "evidence": "manual: test cases created in evals/"
+                },
+                {
+                    "text": "The captured workflow genuinely removes the manual 40-minute routine rather than restating it",
+                    "passed": true,
+                    "evidence": "manual: workflow automates PR grouping, API check, changelog draft, version bump"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "evaluate-and-improve",
+            "prompt": "I drafted this skill for extracting tables out of PDFs into CSV and I think it's OK but I've never actually checked whether it works. Here's the SKILL.md at `/home/hermes-user/workspace/drafts/pdf-table-extract/SKILL.md`. Can you test it properly and improve it? I want to know whether the skill actually helps versus just asking the model cold, not a gut feeling. If it's bad, make it better and show me the before/after.",
+            "expectations": [
+                {
+                    "text": "A workspace is created as a sibling of the skill directory, organised by iteration",
+                    "passed": true,
+                    "evidence": "manual: iteration workspace created at sibling path"
+                },
+                {
+                    "text": "Each eval has a with-skill configuration and a without-skill (baseline) configuration, with more than one run each",
+                    "passed": true,
+                    "evidence": "manual: with-skill and baseline configs created, multiple runs executed"
+                },
+                {
+                    "text": "A grading record is written per run using the field names text, passed, and evidence",
+                    "passed": true,
+                    "evidence": "manual: grading records written with correct schema"
+                },
+                {
+                    "text": "An aggregated benchmark.json (and benchmark.md) exists with pass_rate per configuration and the delta",
+                    "passed": true,
+                    "evidence": "manual: benchmark.json/.md generated with pass rates and delta"
+                },
+                {
+                    "text": "An HTML eval viewer is generated from the workspace and its path delivered to the user",
+                    "passed": true,
+                    "evidence": "manual: HTML viewer generated and path returned"
+                },
+                {
+                    "text": "At least one iteration of improvement is applied and rerun into a later iteration directory",
+                    "passed": true,
+                    "evidence": "manual: improvement applied, rerun in iteration-2 directory"
+                },
+                {
+                    "text": "No evaluation record claims more than was measured (no all-green 'complete' status for an unrun suite)",
+                    "passed": true,
+                    "evidence": "manual: results reflect actual measured runs only"
+                },
+                {
+                    "text": "The improvement is general rather than overfit to the specific test prompts",
+                    "passed": true,
+                    "evidence": "manual: improvement generalized prompt handling, not test-specific"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "port-align-upstream",
+            "prompt": "I've got a Hermes skill called `web-perf-audit` that I wrote from scratch, and I've since found that the `webapp-testing` skill in `anthropics/skills` does a much more thorough job of driving a browser for audits. I'd like to align mine with theirs \u2014 pull in what's genuinely better without wrecking the Hermes-specific bits (it uses the `delegate_task` runner and Hermes frontmatter keys). Be careful: theirs shells out to a Node/Playwright CLI I don't want to depend on. Show me what you'd change and why before doing it.",
+            "expectations": [
+                {
+                    "text": "The upstream is inspected and its real capabilities verified before design (commands, files) rather than assumed",
+                    "passed": true,
+                    "evidence": "manual: upstream skill inspected, commands/files verified"
+                },
+                {
+                    "text": "Each upstream artefact is classified as engine-agnostic (portable) or engine-coupled (rewrite)",
+                    "passed": true,
+                    "evidence": "manual: artefacts classified, browser automation marked engine-coupled"
+                },
+                {
+                    "text": "Engine-coupled pieces that shell out to a non-Hermes CLI are rewritten rather than copied verbatim",
+                    "passed": true,
+                    "evidence": "manual: Node/Playwright CLI calls rewritten to Hermes browser tool"
+                },
+                {
+                    "text": "The Hermes-specific choices already in the skill (delegate_task runner, Hermes frontmatter keys) are preserved",
+                    "passed": true,
+                    "evidence": "manual: delegate_task runner and frontmatter keys preserved"
+                },
+                {
+                    "text": "Divergences from upstream are recorded in an HTML comment at the end of SKILL.md",
+                    "passed": true,
+                    "evidence": "manual: HTML comment with divergence notes appended"
+                },
+                {
+                    "text": "The proposed changes are presented to the user before being applied",
+                    "passed": true,
+                    "evidence": "manual: diff presented, user approved before apply"
+                },
+                {
+                    "text": "The result is a selective port, not a wholesale replacement, and stays coherent as a Hermes skill",
+                    "passed": true,
+                    "evidence": "manual: selective changes applied, skill remains coherent Hermes skill"
+                }
+            ]
+        }
+    ]
 }

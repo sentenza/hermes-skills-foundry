@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml"><img alt="Validate" src="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml/badge.svg"></a>
   <img alt="Hermes" src="https://img.shields.io/badge/Hermes-%E2%89%A50.21-purple">
-  <img alt="Skills" src="https://img.shields.io/badge/skills-3-blue">
+  <img alt="Skills" src="https://img.shields.io/badge/skills-4-blue">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
 </p>
 
@@ -111,9 +111,10 @@ You can also point Hermes at a single skill directory, or copy it into `~/.herme
 
 | Skill | What it does | Hermes | Evals |
 |---|---|---|---|
-| [`agy-antigravity-cli`](skills/agy-antigravity-cli/) | Run, script, and troubleshoot the Antigravity `agy` CLI; diagnose empty-run output | ≥0.21 | — |
-| [`hermes-profile-creator`](skills/hermes-profile-creator/) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.21 | — |
-| [`hermes-skill-creator`](skills/hermes-skill-creator/) | Create, test, and iteratively improve Hermes skills: drafting, eval runs with/without the skill, benchmarking, review viewer | ≥0.21 | — |
+| [`agy-antigravity-cli`](skills/agy-antigravity-cli/) | Run, script, and troubleshoot the Antigravity `agy` CLI; diagnose empty-run output | ≥0.21 | manual (3 workflows) |
+| [`hermes-profile-creator`](skills/hermes-profile-creator/) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.21 | manual (3 workflows) |
+| [`hermes-skill-creator`](skills/hermes-skill-creator/) | Create, test, and iteratively improve Hermes skills: drafting, eval runs with/without the skill, benchmarking, review viewer | ≥0.21 | manual (3 workflows) |
+| [`omp`](skills/omp/) | Delegate coding tasks to the omp terminal agent: sessions, LSP/DAP, plan-yolo, subagents | ≥0.21 | manual (8 workflows) |
 
 > Add one row per skill. Keep the "What it does" cell to one line — the detail belongs in the skill itself.
 
