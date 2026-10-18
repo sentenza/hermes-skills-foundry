@@ -77,6 +77,7 @@ python3 scripts/validate.py          # CI runs this exact gate
 | [`agy-antigravity-cli`](skills/agy-antigravity-cli/) | Run, script, and troubleshoot the Antigravity `agy` CLI; diagnose empty-run output | ≥0.21 | manual (3 workflows) |
 | [`hermes-profile-creator`](skills/hermes-profile-creator/) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.21 | manual (3 workflows) |
 | [`hermes-skill-creator`](skills/hermes-skill-creator/) | Create, test, and iteratively improve Hermes skills: drafting, eval runs with/without the skill, benchmarking, review viewer | ≥0.21 | manual (3 workflows) |
+| [`omp`](skills/omp/) | Delegate coding tasks to the omp terminal agent: sessions, LSP/DAP, plan-yolo, subagents | ≥0.21 | manual (8 workflows) |
 
 ### Ported skills (attribution)
 
