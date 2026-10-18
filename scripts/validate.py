@@ -35,6 +35,10 @@ DOC_REFERENCE_PATTERN = re.compile(
 def parse_frontmatter(content):
     """Parse YAML frontmatter delimited by --- from SKILL.md content.
 
+    Supports a practical subset: simple scalars, quoted strings, lists,
+    and one level of nested mappings. Rejects multiline scalars (|, >),
+    anchors, and complex structures with a clear error.
+
     Returns:
         tuple: (data_dict, raw_fm_text, body_text, lines_after_fm)
     """
@@ -51,42 +55,134 @@ def parse_frontmatter(content):
     if closing_idx is None:
         return None, "", content, []
 
-    fm_text = "\n".join(lines[1:closing_idx])
+    fm_lines = lines[1:closing_idx]
+    fm_text = "\n".join(fm_lines)
     body_text = "\n".join(lines[closing_idx + 1:])
     lines_after_fm = lines[closing_idx + 1:]
 
+    # Parse using a simple state machine
     data = {}
-    current_key = None
-    current_val_lines = []
+    stack = [(data, -1)]  # (current_dict, indent_level)
+    i = 0
 
-    for line in lines[1:closing_idx]:
+    while i < len(fm_lines):
+        line = fm_lines[i]
+        # Strip inline comments (but not inside quotes)
+        in_single = in_double = False
+        comment_pos = -1
+        for idx, ch in enumerate(line):
+            if ch == "'" and not in_double:
+                in_single = not in_single
+            elif ch == '"' and not in_single:
+                in_double = not in_double
+            elif ch == "#" and not in_single and not in_double:
+                comment_pos = idx
+                break
+        if comment_pos >= 0:
+            line = line[:comment_pos].rstrip()
+
         stripped = line.strip()
+
+        # Skip empty lines and comments
         if not stripped or stripped.startswith("#"):
+            i += 1
             continue
 
-        m = re.match(r"^([a-zA-Z0-9_-]+):\s*(.*)$", line)
-        if m:
-            if current_key:
-                data[current_key] = " ".join(current_val_lines).strip()
-                current_val_lines = []
-            current_key = m.group(1)
-            val_part = m.group(2).strip()
-            if val_part not in (">", "|", ">-", "|-") and val_part:
-                if (val_part.startswith('"') and val_part.endswith('"')) or (
-                    val_part.startswith("'") and val_part.endswith("'")
-                ):
-                    val_part = val_part[1:-1]
-                current_val_lines = [val_part]
-            else:
-                current_val_lines = []
-        elif current_key and (line.startswith("  ") or line.startswith("\t")):
-            val_line = stripped
-            if val_line.startswith("- "):
-                val_line = val_line[2:].strip()
-            current_val_lines.append(val_line)
+        # Calculate indent
+        indent = len(line) - len(line.lstrip())
 
-    if current_key:
-        data[current_key] = " ".join(current_val_lines).strip()
+        # Pop stack to current indent level
+        while stack and indent <= stack[-1][1]:
+            stack.pop()
+
+        if not stack:
+            return None, fm_text, body_text, lines_after_fm
+
+        current_dict, _ = stack[-1]
+
+        # Check for list item
+        if stripped.startswith("- "):
+            # List item: find the most recently created list in current_dict
+            # (Python 3.7+ preserves insertion order)
+            parent_key = None
+            for k, v in current_dict.items():
+                if isinstance(v, list):
+                    parent_key = k
+            if parent_key is None:
+                raise ValueError(
+                    f"List item at line {i+2} has no parent list key "
+                    f"(in frontmatter, lists must follow a key:)"
+                )
+            item = stripped[2:].strip()
+            # Strip quotes
+            if (item.startswith('"') and item.endswith('"')) or (
+                item.startswith("'") and item.endswith("'")
+            ):
+                item = item[1:-1]
+            current_dict[parent_key].append(item)
+            i += 1
+            continue
+
+        # Key: value pair
+        m = re.match(r"^([a-zA-Z0-9_-]+):\s*(.*)$", stripped)
+        if not m:
+            raise ValueError(
+                f"Invalid frontmatter line {i+2}: '{line.strip()}' "
+                f"(expected 'key: value' or '  - item')"
+            )
+
+        key = m.group(1)
+        val_part = m.group(2).strip()
+
+        # Detect multiline scalar indicators (not supported)
+        if val_part in ("|", ">", "|-", ">-", "|+", ">+"):
+            raise ValueError(
+                f"Multiline scalars (|, >) not supported at line {i+2} "
+                f"for key '{key}'. Use a single-line string."
+            )
+
+        # Check for nested mapping or list (value is empty, next lines indented more)
+        if not val_part:
+            # Peek ahead to find next non-empty, non-comment line
+            j = i + 1
+            while j < len(fm_lines) and (not fm_lines[j].strip() or fm_lines[j].strip().startswith("#")):
+                j += 1
+            if j < len(fm_lines):
+                next_line = fm_lines[j]
+                next_indent = len(next_line) - len(next_line.lstrip())
+                next_stripped = next_line.strip()
+                if next_indent > indent:
+                    if next_stripped.startswith("- "):
+                        # List follows
+                        current_dict[key] = []
+                        i += 1
+                        continue
+                    else:
+                        # Nested mapping
+                        current_dict[key] = {}
+                        stack.append((current_dict[key], indent))
+                        i += 1
+                        continue
+
+        # Simple scalar value
+        val = val_part
+        if (val.startswith('"') and val.endswith('"')) or (
+            val.startswith("'") and val.endswith("'")
+        ):
+            val = val[1:-1]
+        elif val_part == "":
+            val = ""
+        # Check if this key should start a list (next line is list item)
+        elif i + 1 < len(fm_lines):
+            next_stripped = fm_lines[i + 1].strip()
+            if next_stripped.startswith("- "):
+                current_dict[key] = []
+                # Don't consume the list item here; let next iteration handle it
+                i += 1
+                continue
+
+        current_dict[key] = val
+        i += 1
 
     return data, fm_text, body_text, lines_after_fm
 
