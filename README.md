@@ -15,8 +15,6 @@
   <sub>An independent community project — not affiliated with or endorsed by Nous Research.</sub>
 </p>
 
----
-
 ## Quick Start
 
 ### Install a skill
@@ -72,8 +70,6 @@ cd hermes-skills-foundry
 python3 scripts/validate.py          # CI runs this exact gate
 ```
 
----
-
 ## Skills
 
 | Skill | What it does | Hermes | Evals |
@@ -93,8 +89,6 @@ python3 scripts/validate.py          # CI runs this exact gate
 | [`hermes-profile-creator`](skills/hermes-profile-creator/) | [thedaviddias/souls-directory](https://github.com/thedaviddias/souls-directory) | MIT |
 
 > The other two skills (`omp`, `agy-antigravity-cli`) are original adapter skills authored for this foundry.
-
----
 
 ## How It Works
 
@@ -152,9 +146,8 @@ The upstream project keeps its licence; the credit stays visible. Nothing is por
 
 </details>
 
----
-
-## For Contributors
+<details>
+<summary><h2>For Contributors</h2></summary>
 
 ### Create a skill
 
@@ -196,26 +189,13 @@ A contribution should contain:
 - a one-line row added to the skills table above.
 
 Contributions are accepted under this repo's MIT licence (inbound = outbound) — there is no CLA to sign.
-
----
-
-## Roadmap
-
-- [x] Repository skeleton
-- [x] `docs/standard.md` — the written standard
-- [x] CI gate wired to `scripts/validate.py`
-- [x] `hermes-profile-creator` — profile and `SOUL.md` creation and editing
-- [x] `hermes-skill-creator` — skill creation, evaluation, and iteration
-
----
+</details>
 
 ## Licence
 
 MIT — see [`LICENSE`](LICENSE).
 
 Ported skills keep their upstream licence. A port ships that licence in its own directory (for example `LICENSE-APACHE-2.0`) alongside a `NOTICE` recording the upstream and the modifications, and credits it in the skill's attribution header. Licensing is therefore per skill: the foundry is MIT, while an individual ported skill may carry its upstream licence (Apache-2.0, for instance).
-
----
 
 ## Credits
 
