@@ -1,1 +1,215 @@
-{"skill":"omp","status":"manual","reason":"Manually tested on Hermes 0.22 with live omp CLI (v18.1.18). All eight workflows verified end-to-end: one-shot, background, session continue, plan-yolo, JSON mode, subagents, model selection, read-only/approval modes.","tested_hermes_version":"0.22.2","model":null,"prompts":[{"id":1,"name":"one-shot-delegation","prompt":"Use omp to fix the failing test in `src/parser.test.ts`. Run the test, explain the root cause in 3 lines. Use `--max-time 600` and `--no-session` since this is a throwaway task.","expectations":[{"text":"The omp command uses -p (print mode) for non-interactive execution","passed":true,"evidence":"manual: verified -p flag used in terminal invocation"},{"text":"The omp command includes --max-time with a finite value (e.g., 600)","passed":true,"evidence":"manual: verified --max-time 600 in terminal args"},{"text":"The omp command includes --no-session for throwaway scratch tasks","passed":true,"evidence":"manual: verified --no-session flag present"},{"text":"The omp command specifies workdir=<project root> explicitly","passed":true,"evidence":"manual: verified workdir parameter set to project root"},{"text":"Hermes verifies the test passes by reading the test output rather than trusting omp's claim","passed":true,"evidence":"manual: read tool or terminal output inspection performed after omp returned"}]},{"id":2,"name":"background-long-task","prompt":"Use omp to migrate the job queue to Postgres; keep the public API; run the full test suite after. This will take a while, so run it in the background with a 1-hour timeout.","expectations":[{"text":"The omp command uses -p (print mode) with --max-time 3600 (or 1h)","passed":true,"evidence":"manual: verified -p --max-time 3600 in terminal args"},{"text":"The terminal call uses background=true and notify=true","passed":true,"evidence":"manual: verified background=true, notify=true in terminal tool call"},{"text":"Hermes explains how to poll the background process or read its log","passed":true,"evidence":"manual: response includes polling/log reading instructions"}]},{"id":3,"name":"session-continue","prompt":"The project at `~/proj` already has omp sessions from earlier work. Continue the latest session for that directory and implement fix #2 from the previous investigation report. Use a 15-minute timeout.","expectations":[{"text":"The omp command uses -c (continue) flag to resume the latest session for the directory","passed":true,"evidence":"manual: verified -c flag in terminal invocation"},{"text":"The omp command includes -p (print mode) and --max-time 900","passed":true,"evidence":"manual: verified -p --max-time 900 in terminal args"},{"text":"Hermes checks for prior sessions before starting fresh (ls ~/.omp/agent/sessions/)","passed":true,"evidence":"manual: prior session check shown or explained before continue"},{"text":"The prompt references the previous investigation's fix #2, demonstrating session memory reuse","passed":true,"evidence":"manual: prompt text references fix #2 from prior session"}]},{"id":4,"name":"plan-yolo","prompt":"Draft a plan for refactoring the authentication module to use JWT instead of session cookies. Investigate the codebase, do NOT edit anything. Output the full plan as markdown. Then, after I review it, implement exactly that plan.","expectations":[{"text":"First omp call uses --plan-yolo (or explicit plan prompt) with --no-session and read-only investigation","passed":true,"evidence":"manual: verified --plan-yolo or plan prompt with read-only constraints"},{"text":"Hermes presents the plan to the user for review before the second call","passed":true,"evidence":"manual: plan output shown, user review step occurred"},{"text":"Second omp call implements the reviewed plan with explicit 'Implement exactly this plan:' prompt","passed":true,"evidence":"manual: second call uses plan implementation prompt"},{"text":"The plan includes investigation steps, file changes, and test verification","passed":true,"evidence":"manual: plan contained investigation, file list, test steps"}]},{"id":5,"name":"json-mode-parse","prompt":"Run omp in JSON mode (--mode json) with --no-session and --max-time 300 to create a simple Python hello world script. Parse the JSONL output and extract only the final assistant message text.","expectations":[{"text":"The omp command includes --mode json","passed":true,"evidence":"manual: verified --mode json in terminal args"},{"text":"Hermes provides Python code to parse newline-delimited JSON events","passed":true,"evidence":"manual: Python parsing code provided in response"},{"text":"The parsing logic takes the LAST turn_end with role=assistant","passed":true,"evidence":"manual: parsing logic correctly targets last assistant turn_end"},{"text":"The extracted answer contains the generated script content","passed":true,"evidence":"manual: extracted output contained hello world script"}]},{"id":6,"name":"subagent-delegation","prompt":"Use omp to audit the src/auth directory for security issues. Use the security-reviewer subagent (read-only) to do the audit, do not edit anything. Report all findings.","expectations":[{"text":"The omp prompt explicitly names the security-reviewer subagent","passed":true,"evidence":"manual: prompt text includes 'security-reviewer' subagent name"},{"text":"The prompt specifies read-only / do not edit constraint","passed":true,"evidence":"manual: prompt includes read-only constraint"},{"text":"Hermes acknowledges that subagents multiply cost and should be file-disjoint","passed":true,"evidence":"manual: response mentions cost multiplication and file-disjoint ownership"}]},{"id":7,"name":"model-selection","prompt":"List available models in omp, then run a task using the 'slow' (deep reasoning) role with the Opus model. Also show how to configure a custom OpenAI-compatible endpoint.","expectations":[{"text":"Hermes runs omp models first to list available providers/models","passed":true,"evidence":"manual: omp models invoked before task delegation"},{"text":"The task run uses --slow or --model with Opus identifier","passed":true,"evidence":"manual: verified --slow or --model opus in terminal args"},{"text":"Response explains ~/.omp/agent/models.yml structure for custom endpoints","passed":true,"evidence":"manual: models.yml structure explained with providers/baseUrl/apiKey"}]},{"id":8,"name":"readonly-approval","prompt":"Run omp in read-only mode (only read, grep, glob tools) to investigate the codebase without any edits. Also explain the difference between yolo, write, and always-ask approval modes for headless runs.","expectations":[{"text":"The omp command includes --tools read,grep,glob (or --no-tools with explicit allows)","passed":true,"evidence":"manual: verified --tools read,grep,glob in terminal args"},{"text":"Response explains yolo = no prompts (default), write = prompt on exec, always-ask = prompt on writes/exec","passed":true,"evidence":"manual: all three modes explained correctly"},{"text":"Response warns that headless -p with prompt/always-ask hangs silently","passed":true,"evidence":"manual: hang warning present in response"},{"text":"Response recommends --auto-approve or --approval-mode yolo for headless runs","passed":true,"evidence":"manual: --auto-approve or --approval-mode yolo recommended"}]}]}
+{
+    "skill": "omp",
+    "status": "manual",
+    "reason": "Manually tested on Hermes 0.22 with live omp CLI (v18.1.18). All eight workflows verified end-to-end: one-shot, background, session continue, plan-yolo, JSON mode, subagents, model selection, read-only/approval modes.",
+    "tested_hermes_version": "0.22.2",
+    "model": null,
+    "prompts": [
+        {
+            "id": 1,
+            "name": "one-shot-delegation",
+            "prompt": "Use omp to fix the failing test in `src/parser.test.ts`. Run the test, explain the root cause in 3 lines. Use `--max-time 600` and `--no-session` since this is a throwaway task.",
+            "expectations": [
+                {
+                    "text": "The omp command uses -p (print mode) for non-interactive execution",
+                    "passed": true,
+                    "evidence": "manual: verified -p flag used in terminal invocation"
+                },
+                {
+                    "text": "The omp command includes --max-time with a finite value (e.g., 600)",
+                    "passed": true,
+                    "evidence": "manual: verified --max-time 600 in terminal args"
+                },
+                {
+                    "text": "The omp command includes --no-session for throwaway scratch tasks",
+                    "passed": true,
+                    "evidence": "manual: verified --no-session flag present"
+                },
+                {
+                    "text": "The omp command specifies workdir=<project root> explicitly",
+                    "passed": true,
+                    "evidence": "manual: verified workdir parameter set to project root"
+                },
+                {
+                    "text": "Hermes verifies the test passes by reading the test output rather than trusting omp's claim",
+                    "passed": true,
+                    "evidence": "manual: read tool or terminal output inspection performed after omp returned"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "background-long-task",
+            "prompt": "Use omp to migrate the job queue to Postgres; keep the public API; run the full test suite after. This will take a while, so run it in the background with a 1-hour timeout.",
+            "expectations": [
+                {
+                    "text": "The omp command uses -p (print mode) with --max-time 3600 (or 1h)",
+                    "passed": true,
+                    "evidence": "manual: verified -p --max-time 3600 in terminal args"
+                },
+                {
+                    "text": "The terminal call uses background=true and notify=true",
+                    "passed": true,
+                    "evidence": "manual: verified background=true, notify=true in terminal tool call"
+                },
+                {
+                    "text": "Hermes explains how to poll the background process or read its log",
+                    "passed": true,
+                    "evidence": "manual: response includes polling/log reading instructions"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "session-continue",
+            "prompt": "The project at `~/proj` already has omp sessions from earlier work. Continue the latest session for that directory and implement fix #2 from the previous investigation report. Use a 15-minute timeout.",
+            "expectations": [
+                {
+                    "text": "The omp command uses -c (continue) flag to resume the latest session for the directory",
+                    "passed": true,
+                    "evidence": "manual: verified -c flag in terminal invocation"
+                },
+                {
+                    "text": "The omp command includes -p (print mode) and --max-time 900",
+                    "passed": true,
+                    "evidence": "manual: verified -p --max-time 900 in terminal args"
+                },
+                {
+                    "text": "Hermes checks for prior sessions before starting fresh (ls ~/.omp/agent/sessions/)",
+                    "passed": true,
+                    "evidence": "manual: prior session check shown or explained before continue"
+                },
+                {
+                    "text": "The prompt references the previous investigation's fix #2, demonstrating session memory reuse",
+                    "passed": true,
+                    "evidence": "manual: prompt text references fix #2 from prior session"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "name": "plan-yolo",
+            "prompt": "Draft a plan for refactoring the authentication module to use JWT instead of session cookies. Investigate the codebase, do NOT edit anything. Output the full plan as markdown. Then, after I review it, implement exactly that plan.",
+            "expectations": [
+                {
+                    "text": "First omp call uses --plan-yolo (or explicit plan prompt) with --no-session and read-only investigation",
+                    "passed": true,
+                    "evidence": "manual: verified --plan-yolo or plan prompt with read-only constraints"
+                },
+                {
+                    "text": "Hermes presents the plan to the user for review before the second call",
+                    "passed": true,
+                    "evidence": "manual: plan output shown, user review step occurred"
+                },
+                {
+                    "text": "Second omp call implements the reviewed plan with explicit 'Implement exactly this plan:' prompt",
+                    "passed": true,
+                    "evidence": "manual: second call uses plan implementation prompt"
+                },
+                {
+                    "text": "The plan includes investigation steps, file changes, and test verification",
+                    "passed": true,
+                    "evidence": "manual: plan contained investigation, file list, test steps"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "name": "json-mode-parse",
+            "prompt": "Run omp in JSON mode (--mode json) with --no-session and --max-time 300 to create a simple Python hello world script. Parse the JSONL output and extract only the final assistant message text.",
+            "expectations": [
+                {
+                    "text": "The omp command includes --mode json",
+                    "passed": true,
+                    "evidence": "manual: verified --mode json in terminal args"
+                },
+                {
+                    "text": "Hermes provides Python code to parse newline-delimited JSON events",
+                    "passed": true,
+                    "evidence": "manual: Python parsing code provided in response"
+                },
+                {
+                    "text": "The parsing logic takes the LAST turn_end with role=assistant",
+                    "passed": true,
+                    "evidence": "manual: parsing logic correctly targets last assistant turn_end"
+                },
+                {
+                    "text": "The extracted answer contains the generated script content",
+                    "passed": true,
+                    "evidence": "manual: extracted output contained hello world script"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "name": "subagent-delegation",
+            "prompt": "Use omp to audit the src/auth directory for security issues. Use the security-reviewer subagent (read-only) to do the audit, do not edit anything. Report all findings.",
+            "expectations": [
+                {
+                    "text": "The omp prompt explicitly names the security-reviewer subagent",
+                    "passed": true,
+                    "evidence": "manual: prompt text includes 'security-reviewer' subagent name"
+                },
+                {
+                    "text": "The prompt specifies read-only / do not edit constraint",
+                    "passed": true,
+                    "evidence": "manual: prompt includes read-only constraint"
+                },
+                {
+                    "text": "Hermes acknowledges that subagents multiply cost and should be file-disjoint",
+                    "passed": true,
+                    "evidence": "manual: response mentions cost multiplication and file-disjoint ownership"
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "name": "model-selection",
+            "prompt": "List available models in omp, then run a task using the 'slow' (deep reasoning) role with the Opus model. Also show how to configure a custom OpenAI-compatible endpoint.",
+            "expectations": [
+                {
+                    "text": "Hermes runs omp models first to list available providers/models",
+                    "passed": true,
+                    "evidence": "manual: omp models invoked before task delegation"
+                },
+                {
+                    "text": "The task run uses --slow or --model with Opus identifier",
+                    "passed": true,
+                    "evidence": "manual: verified --slow or --model opus in terminal args"
+                },
+                {
+                    "text": "Response explains ~/.omp/agent/models.yml structure for custom endpoints",
+                    "passed": true,
+                    "evidence": "manual: models.yml structure explained with providers/baseUrl/apiKey"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "name": "readonly-approval",
+            "prompt": "Run omp in read-only mode (only read, grep, glob tools) to investigate the codebase without any edits. Also explain the difference between yolo, write, and always-ask approval modes for headless runs.",
+            "expectations": [
+                {
+                    "text": "The omp command includes --tools read,grep,glob (or --no-tools with explicit allows)",
+                    "passed": true,
+                    "evidence": "manual: verified --tools read,grep,glob in terminal args"
+                },
+                {
+                    "text": "Response explains yolo = no prompts (default), write = prompt on exec, always-ask = prompt on writes/exec",
+                    "passed": true,
+                    "evidence": "manual: all three modes explained correctly"
+                },
+                {
+                    "text": "Response warns that headless -p with prompt/always-ask hangs silently",
+                    "passed": true,
+                    "evidence": "manual: hang warning present in response"
+                },
+                {
+                    "text": "Response recommends --auto-approve or --approval-mode yolo for headless runs",
+                    "passed": true,
+                    "evidence": "manual: --auto-approve or --approval-mode yolo recommended"
+                }
+            ]
+        }
+    ]
+}

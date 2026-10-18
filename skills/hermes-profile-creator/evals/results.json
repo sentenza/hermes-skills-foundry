@@ -1,1 +1,135 @@
-{"skill":"hermes-profile-creator","status":"manual","reason":"Manually tested on Hermes 0.22. Profile creation, OpenClaw migration, and distribution packaging workflows all verified end-to-end.","tested_hermes_version":"0.22.2","model":null,"prompts":[{"id":1,"name":"create-from-brief","prompt":"Hey! I'm on rotation for our database infrastructure this month and honestly I'm getting annoyed with the default generalist agent. Whenever production alerts pop off, it hits me with \"I hope you are having a wonderful day! How may I assist you with your database inquiries?\" and then dumps 40 lines of generic PostgreSQL 101 tutorials instead of helping me triage.\n\nI want to set up a dedicated Hermes profile named `db-sre` located under `~/.hermes/profiles/db-sre/` that acts as a blunt, pragmatic database reliability engineer. Here is what I need from it:\n- Operational role: Database reliability specialist handling Postgres lock contention, replication delay, connection pool exhaustion, and query plan regressions.\n- Tone/Style: Clipped, pragmatic, zero sycophancy. No \"happy to help\" or \"great question!\".\n- Hard constraints: Never suggest `DROP TABLE`/`TRUNCATE` without explicit confirmation. Always prefer `EXPLAIN ANALYZE` over guessing. Connection pool changes require current utilization numbers first.\n- Output format: Short diagnostic summary, then numbered action items. No prose padding.","expectations":[{"text":"Profile directory ~/.hermes/profiles/db-sre/ exists and contains SOUL.md","passed":true,"evidence":"manual: directory and SOUL.md created at correct path"},{"text":"SOUL.md contains the four standard section headers: ## Identity, ## Style, ## Avoid, and ## Defaults","passed":true,"evidence":"manual: all four sections present in generated SOUL.md"},{"text":"SOUL.md contains explicit anti-sycophancy and pushback principles regarding dangerous database operations","passed":true,"evidence":"manual: ## Avoid section includes DROP/TRUNCATE confirmation rule, pool change constraints"},{"text":"SOUL.md contains zero workspace-specific paths or temporary repository instructions","passed":true,"evidence":"manual: no hardcoded paths found in output"},{"text":"Profile routing description is configured via hermes profile describe with functional SRE capabilities and no narrative lore","passed":true,"evidence":"manual: hermes profile describe set with functional description"},{"text":"Synthesized persona tone is direct and pragmatic without sycophantic pleasantries or conversational filler","passed":true,"evidence":"manual: reviewed SOUL.md tone - clipped, direct, no filler"}]},{"id":2,"name":"adapt-openclaw-soul","prompt":"We're migrating our pair-programming assistant over from an old OpenClaw setup to Hermes, and the soul file we had in `/home/hermes-user/workspace/legacy-claw/SOUL.md` is a total mess. Whoever set it up originally pasted four paragraphs of fantasy lore about a \"cybernetic monk weaving silk threads of code in the digital monastery\", alongside 35 microscopic rules that constantly contradict each other, repetitive disclaimer lectures (\"As an AI assistant, remember to test your code...\"), and hardcoded repo paths like `/opt/app/frontend/src` and `npm run build:prod`. They also had a separate `IDENTITY.md` file in that folder.\n\nWe want to migrate this to a clean Hermes profile named `codeweaver`. Can you adapt this OpenClaw soul for Hermes?","expectations":[{"text":"Profile directory ~/.hermes/profiles/codeweaver/ is scaffolded with SOUL.md as the profile marker","passed":true,"evidence":"manual: directory scaffolded, SOUL.md created"},{"text":"SOUL.md is structured into ## Identity, ## Style, ## Avoid, and ## Defaults sections","passed":true,"evidence":"manual: four sections present"},{"text":"Fantasy lore and disclaimer scripts (cybernetic monk, digital monastery, lecture disclaimers) are completely removed from SOUL.md","passed":true,"evidence":"manual: no fantasy lore or AI disclaimer lectures in output"},{"text":"Hardcoded workspace paths and CLI build commands (/opt/app, npm run build) are completely removed from SOUL.md","passed":true,"evidence":"manual: no hardcoded paths or build commands in output"},{"text":"No IDENTITY.md file is created anywhere in ~/.hermes/profiles/codeweaver/","passed":true,"evidence":"manual: only SOUL.md created, no IDENTITY.md"},{"text":"Routing description is set via hermes profile describe with functional code-review capabilities instead of lore","passed":true,"evidence":"manual: functional description set, no lore"},{"text":"Condensed principles capture pair-programming judgment without brittle micro-rule paralysis","passed":true,"evidence":"manual: principles condensed from 35 rules to ~8 focused guidelines"}]},{"id":3,"name":"package-distribution","prompt":"Our security team has been running a local Hermes profile called `secops-triage` under `~/.hermes/profiles/secops-triage/` for automated CVE reviews and dependency audits. It's working great, so now we want to package it as a Git distribution in `/home/hermes-user/workspace/hermes-profile-secops` so other teams can install it via `hermes profile install <repo-url> --name secops-triage`.\n\nPlease set up the distribution repository following the \"Repo IS the Profile\" layout with these specs:\n- Profile name: `secops-triage`, version `0.1.0`.\n- Description: \"Autonomous security triage specialist for dependency scanning, CVE evaluation, and audit remediation.\"\n- Runtime requirement: `hermes_requires: \">=0.20\"` (conforming to repository standard).","expectations":[{"text":"distribution.yaml exists at /home/hermes-user/workspace/hermes-profile-secops/distribution.yaml and is valid YAML","passed":true,"evidence":"manual: distribution.yaml created and valid YAML"},{"text":"distribution.yaml contains valid metadata fields: name ('secops-triage'), version ('0.1.0'), description, author, and license ('MIT')","passed":true,"evidence":"manual: all metadata fields present and correct"},{"text":"distribution.yaml specifies hermes_requires: \">=0.20\" as an explicit semver constraint","passed":true,"evidence":"manual: hermes_requires field present with correct value"},{"text":"env_requires defines SNYK_API_TOKEN as required and SLACK_SECURITY_WEBHOOK as optional with default value","passed":true,"evidence":"manual: env_requires has required/optional correctly set"},{"text":"distribution_owned allowlist includes SOUL.md, config.yaml, mcp.json, skills/, cron/, distribution.yaml and excludes runtime directories and credentials","passed":true,"evidence":"manual: allowlist correct, runtime dirs excluded"},{"text":".env.EXAMPLE is generated at repository root documenting SNYK_API_TOKEN and SLACK_SECURITY_WEBHOOK","passed":true,"evidence":"manual: .env.EXAMPLE created with both vars documented"},{"text":"No .env credentials, secrets, or runtime directories (memories/, sessions/, cache/, backups/) exist in the distribution directory","passed":true,"evidence":"manual: verified clean distribution dir"},{"text":"Repository layout directly mirrors profile directory structure for seamless installation via hermes profile install","passed":true,"evidence":"manual: layout mirrors profile dir structure"}]}]}
+{
+    "skill": "hermes-profile-creator",
+    "status": "manual",
+    "reason": "Manually tested on Hermes 0.22. Profile creation, OpenClaw migration, and distribution packaging workflows all verified end-to-end.",
+    "tested_hermes_version": "0.22.2",
+    "model": null,
+    "prompts": [
+        {
+            "id": 1,
+            "name": "create-from-brief",
+            "prompt": "Hey! I'm on rotation for our database infrastructure this month and honestly I'm getting annoyed with the default generalist agent. Whenever production alerts pop off, it hits me with \"I hope you are having a wonderful day! How may I assist you with your database inquiries?\" and then dumps 40 lines of generic PostgreSQL 101 tutorials instead of helping me triage.\n\nI want to set up a dedicated Hermes profile named `db-sre` located under `~/.hermes/profiles/db-sre/` that acts as a blunt, pragmatic database reliability engineer. Here is what I need from it:\n- Operational role: Database reliability specialist handling Postgres lock contention, replication delay, connection pool exhaustion, and query plan regressions.\n- Tone/Style: Clipped, pragmatic, zero sycophancy. No \"happy to help\" or \"great question!\".\n- Hard constraints: Never suggest `DROP TABLE`/`TRUNCATE` without explicit confirmation. Always prefer `EXPLAIN ANALYZE` over guessing. Connection pool changes require current utilization numbers first.\n- Output format: Short diagnostic summary, then numbered action items. No prose padding.",
+            "expectations": [
+                {
+                    "text": "Profile directory ~/.hermes/profiles/db-sre/ exists and contains SOUL.md",
+                    "passed": true,
+                    "evidence": "manual: directory and SOUL.md created at correct path"
+                },
+                {
+                    "text": "SOUL.md contains the four standard section headers: ## Identity, ## Style, ## Avoid, and ## Defaults",
+                    "passed": true,
+                    "evidence": "manual: all four sections present in generated SOUL.md"
+                },
+                {
+                    "text": "SOUL.md contains explicit anti-sycophancy and pushback principles regarding dangerous database operations",
+                    "passed": true,
+                    "evidence": "manual: ## Avoid section includes DROP/TRUNCATE confirmation rule, pool change constraints"
+                },
+                {
+                    "text": "SOUL.md contains zero workspace-specific paths or temporary repository instructions",
+                    "passed": true,
+                    "evidence": "manual: no hardcoded paths found in output"
+                },
+                {
+                    "text": "Profile routing description is configured via hermes profile describe with functional SRE capabilities and no narrative lore",
+                    "passed": true,
+                    "evidence": "manual: hermes profile describe set with functional description"
+                },
+                {
+                    "text": "Synthesized persona tone is direct and pragmatic without sycophantic pleasantries or conversational filler",
+                    "passed": true,
+                    "evidence": "manual: reviewed SOUL.md tone - clipped, direct, no filler"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "adapt-openclaw-soul",
+            "prompt": "We're migrating our pair-programming assistant over from an old OpenClaw setup to Hermes, and the soul file we had in `/home/hermes-user/workspace/legacy-claw/SOUL.md` is a total mess. Whoever set it up originally pasted four paragraphs of fantasy lore about a \"cybernetic monk weaving silk threads of code in the digital monastery\", alongside 35 microscopic rules that constantly contradict each other, repetitive disclaimer lectures (\"As an AI assistant, remember to test your code...\"), and hardcoded repo paths like `/opt/app/frontend/src` and `npm run build:prod`. They also had a separate `IDENTITY.md` file in that folder.\n\nWe want to migrate this to a clean Hermes profile named `codeweaver`. Can you adapt this OpenClaw soul for Hermes?",
+            "expectations": [
+                {
+                    "text": "Profile directory ~/.hermes/profiles/codeweaver/ is scaffolded with SOUL.md as the profile marker",
+                    "passed": true,
+                    "evidence": "manual: directory scaffolded, SOUL.md created"
+                },
+                {
+                    "text": "SOUL.md is structured into ## Identity, ## Style, ## Avoid, and ## Defaults sections",
+                    "passed": true,
+                    "evidence": "manual: four sections present"
+                },
+                {
+                    "text": "Fantasy lore and disclaimer scripts (cybernetic monk, digital monastery, lecture disclaimers) are completely removed from SOUL.md",
+                    "passed": true,
+                    "evidence": "manual: no fantasy lore or AI disclaimer lectures in output"
+                },
+                {
+                    "text": "Hardcoded workspace paths and CLI build commands (/opt/app, npm run build) are completely removed from SOUL.md",
+                    "passed": true,
+                    "evidence": "manual: no hardcoded paths or build commands in output"
+                },
+                {
+                    "text": "No IDENTITY.md file is created anywhere in ~/.hermes/profiles/codeweaver/",
+                    "passed": true,
+                    "evidence": "manual: only SOUL.md created, no IDENTITY.md"
+                },
+                {
+                    "text": "Routing description is set via hermes profile describe with functional code-review capabilities instead of lore",
+                    "passed": true,
+                    "evidence": "manual: functional description set, no lore"
+                },
+                {
+                    "text": "Condensed principles capture pair-programming judgment without brittle micro-rule paralysis",
+                    "passed": true,
+                    "evidence": "manual: principles condensed from 35 rules to ~8 focused guidelines"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "package-distribution",
+            "prompt": "Our security team has been running a local Hermes profile called `secops-triage` under `~/.hermes/profiles/secops-triage/` for automated CVE reviews and dependency audits. It's working great, so now we want to package it as a Git distribution in `/home/hermes-user/workspace/hermes-profile-secops` so other teams can install it via `hermes profile install <repo-url> --name secops-triage`.\n\nPlease set up the distribution repository following the \"Repo IS the Profile\" layout with these specs:\n- Profile name: `secops-triage`, version `0.1.0`.\n- Description: \"Autonomous security triage specialist for dependency scanning, CVE evaluation, and audit remediation.\"\n- Runtime requirement: `hermes_requires: \">=0.20\"` (conforming to repository standard).",
+            "expectations": [
+                {
+                    "text": "distribution.yaml exists at /home/hermes-user/workspace/hermes-profile-secops/distribution.yaml and is valid YAML",
+                    "passed": true,
+                    "evidence": "manual: distribution.yaml created and valid YAML"
+                },
+                {
+                    "text": "distribution.yaml contains valid metadata fields: name ('secops-triage'), version ('0.1.0'), description, author, and license ('MIT')",
+                    "passed": true,
+                    "evidence": "manual: all metadata fields present and correct"
+                },
+                {
+                    "text": "distribution.yaml specifies hermes_requires: \">=0.20\" as an explicit semver constraint",
+                    "passed": true,
+                    "evidence": "manual: hermes_requires field present with correct value"
+                },
+                {
+                    "text": "env_requires defines SNYK_API_TOKEN as required and SLACK_SECURITY_WEBHOOK as optional with default value",
+                    "passed": true,
+                    "evidence": "manual: env_requires has required/optional correctly set"
+                },
+                {
+                    "text": "distribution_owned allowlist includes SOUL.md, config.yaml, mcp.json, skills/, cron/, distribution.yaml and excludes runtime directories and credentials",
+                    "passed": true,
+                    "evidence": "manual: allowlist correct, runtime dirs excluded"
+                },
+                {
+                    "text": ".env.EXAMPLE is generated at repository root documenting SNYK_API_TOKEN and SLACK_SECURITY_WEBHOOK",
+                    "passed": true,
+                    "evidence": "manual: .env.EXAMPLE created with both vars documented"
+                },
+                {
+                    "text": "No .env credentials, secrets, or runtime directories (memories/, sessions/, cache/, backups/) exist in the distribution directory",
+                    "passed": true,
+                    "evidence": "manual: verified clean distribution dir"
+                },
+                {
+                    "text": "Repository layout directly mirrors profile directory structure for seamless installation via hermes profile install",
+                    "passed": true,
+                    "evidence": "manual: layout mirrors profile dir structure"
+                }
+            ]
+        }
+    ]
+}
