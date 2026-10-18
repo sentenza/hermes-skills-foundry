@@ -1,0 +1,17 @@
+This skill is a port of the omp-skill from https://github.com/zaharenok/omp-skill
+
+Upstream: zaharenok/omp-skill (https://github.com/zaharenok/omp-skill)
+Upstream author: Oleg Zakharchenko
+Upstream license: MIT (see LICENSE file in this directory)
+
+Modifications made for Hermes Skills Foundry:
+- Reformatted frontmatter to match foundry standard (name, description, tags, hermes_requires)
+- Added "Prerequisites" section with OMP_BIN override documentation
+- Added "Configuring omp itself" section with MCP, skills, config, project rules
+- Updated "Useful subcommands" table to match foundry conventions
+- Minor wording adjustments for consistency with foundry style
+- Added attribution header per foundry porting requirements
+
+The upstream skill is plain SKILL.md + Markdown references. This port adapts it to the
+Hermes Skills Foundry structure and validation gates while preserving all substantive
+content and patterns verified against omp 18.1.18.

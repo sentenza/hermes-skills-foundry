@@ -77,9 +77,6 @@ python3 scripts/validate.py          # CI runs this exact gate
 | [`agy-antigravity-cli`](skills/agy-antigravity-cli/) | Run, script, and troubleshoot the Antigravity `agy` CLI; diagnose empty-run output | ≥0.21 | manual (3 workflows) |
 | [`hermes-profile-creator`](skills/hermes-profile-creator/) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.21 | manual (3 workflows) |
 | [`hermes-skill-creator`](skills/hermes-skill-creator/) | Create, test, and iteratively improve Hermes skills: drafting, eval runs with/without the skill, benchmarking, review viewer | ≥0.21 | manual (3 workflows) |
-| [`omp`](skills/omp/) | Delegate coding tasks to the omp terminal agent: sessions, LSP/DAP, plan-yolo, subagents | ≥0.21 | manual (8 workflows) |
-
-> Add one row per skill. Keep the "What it does" cell to one line — the detail belongs in the skill itself.
 
 ### Ported skills (attribution)
 
@@ -87,8 +84,12 @@ python3 scripts/validate.py          # CI runs this exact gate
 |---|---|---|
 | [`hermes-skill-creator`](skills/hermes-skill-creator/) | [anthropics/skills](https://github.com/anthropics/skills) | Apache-2.0 |
 | [`hermes-profile-creator`](skills/hermes-profile-creator/) | [thedaviddias/souls-directory](https://github.com/thedaviddias/souls-directory) | MIT |
+| [`omp`](skills/omp/) | [zaharenok/omp-skill](https://github.com/zaharenok/omp-skill) | MIT |
 
-> The other two skills (`omp`, `agy-antigravity-cli`) are original adapter skills authored for this foundry.
+> The other skill (`agy-antigravity-cli`) is an original adapter skill authored for this foundry.
+
+> Add one row per skill. Keep the "What it does" cell to one line — the detail belongs in the skill itself.
+
 
 ## How It Works
 

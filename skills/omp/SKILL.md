@@ -8,6 +8,7 @@ tags:
   - terminal
 hermes_requires: ">=0.21"
 ---
+<!-- adapted from https://github.com/zaharenok/omp-skill (MIT) -->
 
 # omp — terminal coding agent adapter
 
