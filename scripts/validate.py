@@ -21,14 +21,14 @@ NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 ATTRIBUTION_PATTERN = re.compile(r"adapted from\s+\S+\s*\([^)]+\)", re.IGNORECASE)
 # Reference link pattern under references/, assets/, or supporting dirs
 REFERENCE_PATTERN = re.compile(
-    r"(?:(?:\./)?(?:references|assets|scripts|agents|eval-viewer)/[a-zA-Z0-9_.-]+[^\s)\]`\"'>]*)"
+    r"(?:(?:\./|(?<=[\s(\[{<]))(?:references|assets|scripts|agents|eval-viewer)/[a-zA-Z0-9_.-/]+[^\s)\]`\"'>]*)"
 )
 # Documentation cross-links (references/ and assets/) may be named from any skill
 # markdown file, not only SKILL.md, and MUST always resolve. scripts/, agents/ and
 # eval-viewer/ are checked in SKILL.md only: reference docs legitimately name
 # upstream script paths that do not exist in this skill.
 DOC_REFERENCE_PATTERN = re.compile(
-    r"(?:(?:\./)?(?:references|assets)/[a-zA-Z0-9_.-]+[^\s)\]`\"'>]*)"
+    r"(?:(?:\./|(?<=[\s(\[{<]))(?:references|assets|agents)/[a-zA-Z0-9_.-/]+[^\s)\]`\"'>]*)"
 )
 
 
@@ -196,7 +196,7 @@ def check_reference_paths(skill_dir, text, pattern, source, checked):
     errors = []
     for raw_ref in pattern.findall(text):
         clean_ref = re.sub(r"^\./", "", raw_ref).split("#")[0].split("?")[0]
-        clean_ref = clean_ref.rstrip(".,;:)'\"]")
+        clean_ref = clean_ref.rstrip(".)]\">'")
         if not clean_ref or clean_ref in checked:
             continue
         checked.add(clean_ref)
@@ -252,7 +252,14 @@ def validate_skill(skill_dir, verbose=False):
     has_ported_key = "ported_from" in fm_data or bool(
         re.search(r"^\s*ported_from\s*:", fm_text, re.MULTILINE)
     )
-    has_adapted_in_body = bool(re.search(r"\badapted from\b", body, re.IGNORECASE))
+    # Check first non-empty line after frontmatter for adapted from (HTML comment form)
+    first_line = ""
+    for line in lines_after_fm:
+        s = line.strip()
+        if s:
+            first_line = s
+            break
+    has_adapted_in_body = bool(ATTRIBUTION_PATTERN.search(first_line))
 
     if has_ported_key or has_adapted_in_body:
         # Check for attribution line immediately under frontmatter
