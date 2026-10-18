@@ -15,6 +15,7 @@ import concurrent.futures
 import os
 import re
 import sys
+from typing import Optional
 
 # Pattern for skill identifier: lowercase alphanumeric characters and hyphens
 NAME_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -218,126 +219,96 @@ def check_reference_paths(skill_dir, text, pattern, source, checked):
     return errors
 
 
-def validate_skill(skill_dir, verbose=False):
-    """Validate a single skill directory against repository rules.
+# =============================================================================
+# Pure validation rules — each returns error message (str) or None (ok).
+# These have NO side effects: no I/O, no printing, no mutation.
+# Easy to unit test in isolation.
+# =============================================================================
 
-    Returns:
-        list: List of failure error messages (empty if passed).
+def _check_name(name: str, dir_name: str) -> Optional[str]:
+    """Validate skill name: present, matches directory, valid pattern."""
+    name = name.strip()
+    if not name:
+        return "Frontmatter 'name' is missing or empty"
+    if name != dir_name:
+        return f"Skill name '{name}' does not match directory '{dir_name}'"
+    if not NAME_PATTERN.match(name):
+        return f"Skill name '{name}' must match pattern '^[a-z0-9][a-z0-9-]*$'"
+    return None
+
+
+def _check_description(description: str) -> Optional[str]:
+    """Validate description: present, <= 1024 chars."""
+    description = description.strip()
+    if not description:
+        return "Frontmatter 'description' is missing or empty"
+    if len(description) > 1024:
+        return f"Description length ({len(description)}) exceeds 1024 characters"
+    return None
+
+
+def _check_port_attribution(lines_after_fm: list[str], fm_data: dict, fm_text: str) -> Optional[str]:
     """
+    Validate port attribution: if skill is ported (has ported_from key or
+    'adapted from' in first non-empty line after frontmatter), it must have
+    an attribution line of the form '<!-- adapted from <repo> (LICENSE) -->'
+    immediately under the frontmatter.
+    """
+    has_ported_key = "ported_from" in fm_data or bool(
+        re.search(r"^\s*ported_from\s*:", fm_text, re.MULTILINE)
+    )
+    # First non-empty line after frontmatter
+    first_line = next((line.strip() for line in lines_after_fm if line.strip()), "")
+    has_adapted = bool(ATTRIBUTION_PATTERN.search(first_line))
+
+    if not (has_ported_key or has_adapted):
+        return None  # not a port, no check needed
+
+    if not (first_line and ATTRIBUTION_PATTERN.search(first_line)):
+        return (
+            "Ported skill requires an attribution line of the form "
+            "'adapted from <repo> (<LICENSE>)' immediately under frontmatter"
+        )
+    return None
+
+
+def _check_hermes_requires(fm_text: str, skill_dir: str) -> Optional[str]:
+    """Validate hermes_requires: declared in frontmatter or distribution.yaml."""
+    if extract_hermes_requires(fm_text):
+        return None
+    dist_file = os.path.join(skill_dir, "distribution.yaml")
+    if os.path.isfile(dist_file):
+        try:
+            with open(dist_file, "r", encoding="utf-8") as df:
+                if extract_hermes_requires(df.read()):
+                    return None
+        except Exception:
+            pass
+    return "Missing 'hermes_requires' declaration in frontmatter or distribution.yaml"
+
+
+def _check_references(
+    skill_dir: str,
+    body: str,
+    lines_after_fm: list[str],  # unused but kept for signature consistency
+    verbose: bool = False,
+) -> list[str]:
+    """
+    Validate all references in SKILL.md and documentation files.
+    Returns list of errors (empty if all ok).
+    """
+    errors = []
+    checked_refs = set()
+
     def v(msg):
         if verbose:
             print(f"  [verbose] {msg}")
 
-    errors = []
-    skill_name = os.path.basename(skill_dir)
-    skill_file = os.path.join(skill_dir, "SKILL.md")
-
-    v(f"Validating {skill_name}")
-
-    # Gate 1: Structure - File presence
-    if not os.path.isfile(skill_file):
-        return [f"SKILL.md does not exist in {skill_name}"]
-
-    v("SKILL.md found")
-
-    try:
-        with open(skill_file, "r", encoding="utf-8") as f:
-            content = f.read()
-    except Exception as exc:
-        return [f"Could not read SKILL.md: {exc}"]
-
-    # Gate 1: Structure - Frontmatter syntax and fields
-    fm_data, fm_text, body, lines_after_fm = parse_frontmatter(content)
-    if fm_data is None:
-        errors.append("Missing or malformed YAML frontmatter delimited by '---'")
-        return errors
-
-    v("Frontmatter parsed successfully")
-
-    name = fm_data.get("name", "").strip()
-    if not name:
-        errors.append("Frontmatter 'name' is missing or empty")
-    else:
-        v(f"name: {name}")
-        if name != skill_name:
-            errors.append(f"Skill name '{name}' does not match directory '{skill_name}'")
-            return errors
-        if not NAME_PATTERN.match(name):
-            errors.append(f"Skill name '{name}' must match pattern '^[a-z0-9][a-z0-9-]*$'")
-
-    description = fm_data.get("description", "").strip()
-    if not description:
-        errors.append("Frontmatter 'description' is missing or empty")
-    elif len(description) > 1024:
-        errors.append(f"Description length ({len(description)}) exceeds 1024 characters")
-    else:
-        v(f"description length: {len(description)}")
-
-    # Gate 3: Provenance - Port check
-    has_ported_key = "ported_from" in fm_data or bool(
-        re.search(r"^\s*ported_from\s*:", fm_text, re.MULTILINE)
-    )
-    # Check first non-empty line after frontmatter for adapted from (HTML comment form)
-    first_line = ""
-    for line in lines_after_fm:
-        s = line.strip()
-        if s:
-            first_line = s
-            break
-    has_adapted_in_body = bool(ATTRIBUTION_PATTERN.search(first_line))
-
-    if has_ported_key or has_adapted_in_body:
-        v("Ported skill detected, checking attribution")
-        # Check for attribution line immediately under frontmatter
-        first_line = ""
-        for line in lines_after_fm:
-            s = line.strip()
-            if s:
-                first_line = s
-                break
-        if not (first_line and ATTRIBUTION_PATTERN.search(first_line)):
-            errors.append(
-                "Ported skill requires an attribution line of the form "
-                "'adapted from <repo> (<LICENSE>)' immediately under frontmatter"
-            )
-        else:
-            v(f"Attribution found: {first_line}")
-    else:
-        v("Not a ported skill")
-
-    # Gate 4: Compatibility - Hermes version requirement
-    has_compat = False
-    if extract_hermes_requires(fm_text):
-        has_compat = True
-        v("hermes_requires found in frontmatter")
-    else:
-        dist_file = os.path.join(skill_dir, "distribution.yaml")
-        if os.path.isfile(dist_file):
-            try:
-                with open(dist_file, "r", encoding="utf-8") as df:
-                    dist_text = df.read()
-                if extract_hermes_requires(dist_text):
-                    has_compat = True
-                    v("hermes_requires found in distribution.yaml")
-            except Exception:
-                pass
-
-    if not has_compat:
-        errors.append(
-            "Missing 'hermes_requires' declaration in frontmatter or distribution.yaml"
-        )
-
-    # Gate 1: Reference integrity - paths named in SKILL.md (all supporting dirs)
     v("Checking references in SKILL.md")
-    checked_refs = set()
     errors.extend(
         check_reference_paths(skill_dir, body, REFERENCE_PATTERN, "SKILL.md", checked_refs)
     )
 
-    # Gate 1: Reference integrity - documentation cross-links named inside the
-    # supporting markdown files (references/*.md, agents/*.md). Only the
-    # documentation directories are checked here; scripts/, agents/ and
-    # eval-viewer/ are validated in SKILL.md (see DOC_REFERENCE_PATTERN).
     for rel_dir in ("references", "agents"):
         doc_dir = os.path.join(skill_dir, rel_dir)
         if not os.path.isdir(doc_dir):
@@ -357,6 +328,69 @@ def validate_skill(skill_dir, verbose=False):
                     skill_dir, doc_text, DOC_REFERENCE_PATTERN, f"{rel_dir}/{name}", checked_refs
                 )
             )
+    return errors
+
+
+# Small combinator: collect all non-None results
+def _collect(*checks: Optional[str]) -> list[str]:
+    """Collect all error messages from validation checks."""
+    return [c for c in checks if c is not None]
+
+
+# =============================================================================
+# Main validation orchestration — impure (I/O, logging), calls pure rules.
+# =============================================================================
+
+def validate_skill(skill_dir, verbose=False):
+    """Validate a single skill directory against repository rules.
+
+    Returns:
+        list: List of failure error messages (empty if passed).
+    """
+    def v(msg):
+        if verbose:
+            print(f"  [verbose] {msg}")
+
+    errors = []
+    skill_name = os.path.basename(skill_dir)
+    skill_file = os.path.join(skill_dir, "SKILL.md")
+
+    v(f"Validating {skill_name}")
+
+    # Gate 1: Structure - File presence (early return, no recovery)
+    if not os.path.isfile(skill_file):
+        return [f"SKILL.md does not exist in {skill_name}"]
+    v("SKILL.md found")
+
+    try:
+        with open(skill_file, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception as exc:
+        return [f"Could not read SKILL.md: {exc}"]
+
+    # Gate 1: Frontmatter syntax (early return)
+    fm_data, fm_text, body, lines_after_fm = parse_frontmatter(content)
+    if fm_data is None:
+        return ["Missing or malformed YAML frontmatter delimited by '---'"]
+    v("Frontmatter parsed successfully")
+
+    # --- Pure validation rules (all run, all errors collected) ---
+    errors.extend(_collect(
+        _check_name(fm_data.get("name", ""), skill_name),
+        _check_description(fm_data.get("description", "")),
+        _check_port_attribution(lines_after_fm, fm_data, fm_text),
+        _check_hermes_requires(fm_text, skill_dir),
+    ))
+
+    # Early exit on name mismatch (avoids cascading confusing errors)
+    # Note: _check_name already returns the mismatch error, but we need
+    # to stop before reference checks which depend on correct skill identity.
+    name_err = _check_name(fm_data.get("name", ""), skill_name)
+    if name_err and "does not match directory" in name_err:
+        return [name_err]
+
+    # Gate 1 (cont'd): Reference integrity (runs even if other gates fail)
+    errors.extend(_check_references(skill_dir, body, lines_after_fm, verbose))
 
     if verbose:
         if errors:
