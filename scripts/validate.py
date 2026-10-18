@@ -11,6 +11,7 @@ Validates skills against repository standards:
 """
 
 import argparse
+import concurrent.futures
 import os
 import re
 import sys
@@ -31,6 +32,15 @@ DOC_REFERENCE_PATTERN = re.compile(
     r"(?:(?:\./|(?<=[\s(\[{<]))(?:references|assets|agents)/[a-zA-Z0-9_.-/]+[^\s)\]`\"'>]*)"
 )
 
+
+def extract_hermes_requires(text):
+    """Extract hermes_requires value from text, or None if not found/invalid."""
+    m = re.search(r"^\s*hermes_requires:\s*(.+)$", text, re.MULTILINE)
+    if m:
+        val = m.group(1).strip()
+        if val and not val.startswith("#"):
+            return val
+    return None
 
 def parse_frontmatter(content):
     """Parse YAML frontmatter delimited by --- from SKILL.md content.
@@ -239,9 +249,9 @@ def validate_skill(skill_dir, verbose=False):
     else:
         if name != skill_name:
             errors.append(f"Skill name '{name}' does not match directory '{skill_name}'")
+            return errors
         if not NAME_PATTERN.match(name):
             errors.append(f"Skill name '{name}' must match pattern '^[a-z0-9][a-z0-9-]*$'")
-
     description = fm_data.get("description", "").strip()
     if not description:
         errors.append("Frontmatter 'description' is missing or empty")
@@ -277,8 +287,7 @@ def validate_skill(skill_dir, verbose=False):
 
     # Gate 4: Compatibility - Hermes version requirement
     has_compat = False
-    fm_compat = re.search(r"^\s*hermes_requires:\s*(.+)$", fm_text, re.MULTILINE)
-    if fm_compat and fm_compat.group(1).strip() and not fm_compat.group(1).strip().startswith("#"):
+    if extract_hermes_requires(fm_text):
         has_compat = True
     else:
         dist_file = os.path.join(skill_dir, "distribution.yaml")
@@ -286,14 +295,7 @@ def validate_skill(skill_dir, verbose=False):
             try:
                 with open(dist_file, "r", encoding="utf-8") as df:
                     dist_text = df.read()
-                dist_compat = re.search(
-                    r"^\s*hermes_requires:\s*(.+)$", dist_text, re.MULTILINE
-                )
-                if (
-                    dist_compat
-                    and dist_compat.group(1).strip()
-                    and not dist_compat.group(1).strip().startswith("#")
-                ):
+                if extract_hermes_requires(dist_text):
                     has_compat = True
             except Exception:
                 pass
@@ -342,14 +344,17 @@ def main():
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="Print detailed validation messages."
     )
+    parser.add_argument(
+        "-j", "--jobs", type=int, default=0, help="Number of parallel jobs (0 = CPU count)."
+    )
     args = parser.parse_args()
 
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     skills_dir = os.path.join(repo_root, "skills")
 
     if not os.path.isdir(skills_dir):
-        print("nothing to validate yet")
-        return 0
+        print("ERROR: skills directory not found", file=sys.stderr)
+        return 1
 
     skill_subdirs = [
         d
@@ -358,24 +363,30 @@ def main():
     ]
 
     if not skill_subdirs:
-        print("nothing to validate yet")
-        return 0
+        print("WARNING: no skills to validate", file=sys.stderr)
+        return 1
+
+    max_workers = args.jobs or min(32, (os.cpu_count() or 1) + 4)
+
+    def validate_one(name):
+        skill_path = os.path.join(skills_dir, name)
+        return name, validate_skill(skill_path, verbose=args.verbose)
 
     passed_count = 0
     failed_count = 0
 
-    for name in skill_subdirs:
-        skill_path = os.path.join(skills_dir, name)
-        errors = validate_skill(skill_path, verbose=args.verbose)
-
-        if not errors:
-            passed_count += 1
-            print(f"PASS: {name}")
-        else:
-            failed_count += 1
-            print(f"FAIL: {name}")
-            for err in errors:
-                print(f"  - {err}")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_name = {executor.submit(validate_one, name): name for name in skill_subdirs}
+        for future in concurrent.futures.as_completed(future_to_name):
+            name, errors = future.result()
+            if not errors:
+                passed_count += 1
+                print(f"PASS: {name}")
+            else:
+                failed_count += 1
+                print(f"FAIL: {name}")
+                for err in errors:
+                    print(f"  - {err}")
 
     print(f"\nOverall: {passed_count} passed, {failed_count} failed")
     return 1 if failed_count > 0 else 0
