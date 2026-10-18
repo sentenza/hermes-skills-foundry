@@ -42,6 +42,7 @@ def extract_hermes_requires(text):
             return val
     return None
 
+
 def parse_frontmatter(content):
     """Parse YAML frontmatter delimited by --- from SKILL.md content.
 
@@ -223,13 +224,21 @@ def validate_skill(skill_dir, verbose=False):
     Returns:
         list: List of failure error messages (empty if passed).
     """
+    def v(msg):
+        if verbose:
+            print(f"  [verbose] {msg}")
+
     errors = []
     skill_name = os.path.basename(skill_dir)
     skill_file = os.path.join(skill_dir, "SKILL.md")
 
+    v(f"Validating {skill_name}")
+
     # Gate 1: Structure - File presence
     if not os.path.isfile(skill_file):
         return [f"SKILL.md does not exist in {skill_name}"]
+
+    v("SKILL.md found")
 
     try:
         with open(skill_file, "r", encoding="utf-8") as f:
@@ -243,20 +252,26 @@ def validate_skill(skill_dir, verbose=False):
         errors.append("Missing or malformed YAML frontmatter delimited by '---'")
         return errors
 
+    v("Frontmatter parsed successfully")
+
     name = fm_data.get("name", "").strip()
     if not name:
         errors.append("Frontmatter 'name' is missing or empty")
     else:
+        v(f"name: {name}")
         if name != skill_name:
             errors.append(f"Skill name '{name}' does not match directory '{skill_name}'")
             return errors
         if not NAME_PATTERN.match(name):
             errors.append(f"Skill name '{name}' must match pattern '^[a-z0-9][a-z0-9-]*$'")
+
     description = fm_data.get("description", "").strip()
     if not description:
         errors.append("Frontmatter 'description' is missing or empty")
     elif len(description) > 1024:
         errors.append(f"Description length ({len(description)}) exceeds 1024 characters")
+    else:
+        v(f"description length: {len(description)}")
 
     # Gate 3: Provenance - Port check
     has_ported_key = "ported_from" in fm_data or bool(
@@ -272,6 +287,7 @@ def validate_skill(skill_dir, verbose=False):
     has_adapted_in_body = bool(ATTRIBUTION_PATTERN.search(first_line))
 
     if has_ported_key or has_adapted_in_body:
+        v("Ported skill detected, checking attribution")
         # Check for attribution line immediately under frontmatter
         first_line = ""
         for line in lines_after_fm:
@@ -284,11 +300,16 @@ def validate_skill(skill_dir, verbose=False):
                 "Ported skill requires an attribution line of the form "
                 "'adapted from <repo> (<LICENSE>)' immediately under frontmatter"
             )
+        else:
+            v(f"Attribution found: {first_line}")
+    else:
+        v("Not a ported skill")
 
     # Gate 4: Compatibility - Hermes version requirement
     has_compat = False
     if extract_hermes_requires(fm_text):
         has_compat = True
+        v("hermes_requires found in frontmatter")
     else:
         dist_file = os.path.join(skill_dir, "distribution.yaml")
         if os.path.isfile(dist_file):
@@ -297,6 +318,7 @@ def validate_skill(skill_dir, verbose=False):
                     dist_text = df.read()
                 if extract_hermes_requires(dist_text):
                     has_compat = True
+                    v("hermes_requires found in distribution.yaml")
             except Exception:
                 pass
 
@@ -306,6 +328,7 @@ def validate_skill(skill_dir, verbose=False):
         )
 
     # Gate 1: Reference integrity - paths named in SKILL.md (all supporting dirs)
+    v("Checking references in SKILL.md")
     checked_refs = set()
     errors.extend(
         check_reference_paths(skill_dir, body, REFERENCE_PATTERN, "SKILL.md", checked_refs)
@@ -318,7 +341,9 @@ def validate_skill(skill_dir, verbose=False):
     for rel_dir in ("references", "agents"):
         doc_dir = os.path.join(skill_dir, rel_dir)
         if not os.path.isdir(doc_dir):
+            v(f"No {rel_dir}/ directory")
             continue
+        v(f"Checking references in {rel_dir}/")
         for name in sorted(os.listdir(doc_dir)):
             if not name.endswith(".md"):
                 continue
@@ -332,6 +357,12 @@ def validate_skill(skill_dir, verbose=False):
                     skill_dir, doc_text, DOC_REFERENCE_PATTERN, f"{rel_dir}/{name}", checked_refs
                 )
             )
+
+    if verbose:
+        if errors:
+            v(f"FAIL: {len(errors)} error(s)")
+        else:
+            v("PASS")
 
     return errors
 
