@@ -1,0 +1,12 @@
+name: deepseek-search
+version: 0.1.0
+description: Direct access to DeepSeek's native Search and Fetch APIs for live web data with query operators, relevance scoring, and full-page Markdown retrieval.
+hermes_requires: ">=0.21"
+author: sentenza
+license: MIT
+distribution_owned:
+  - SKILL.md
+  - distribution.yaml
+  - scripts
+  - references
+  - evals
