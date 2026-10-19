@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml"><img alt="Validate" src="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml/badge.svg"></a>
   <img alt="Hermes" src="https://img.shields.io/badge/Hermes-%E2%89%A50.21-purple">
-  <img alt="Skills" src="https://img.shields.io/badge/skills-4-blue">
+  <img alt="Skills" src="https://img.shields.io/badge/skills-5-blue">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
 </p>
 
@@ -75,6 +75,7 @@ python3 scripts/validate.py          # CI runs this exact gate
 | Skill | What it does | Hermes | Evals |
 |---|---|---|---|
 | [`agy-antigravity-cli`](skills/agy-antigravity-cli/) | Run, script, and troubleshoot the Antigravity `agy` CLI; diagnose empty-run output | ≥0.21 | manual (3 workflows) |
+| [`deepseek-search`](skills/deepseek-search/) | Search the live web via DeepSeek's native Search/Fetch APIs: query operators, relevance scoring, full-page Markdown fetch | ≥0.21 | pending (needs `DEEPSEEK_API_KEY`) |
 | [`hermes-profile-creator`](skills/hermes-profile-creator/) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.21 | manual (3 workflows) |
 | [`hermes-skill-creator`](skills/hermes-skill-creator/) | Create, test, and iteratively improve Hermes skills: drafting, eval runs with/without the skill, benchmarking, review viewer | ≥0.21 | manual (3 workflows) |
 | [`omp`](skills/omp/) | Delegate coding tasks to the omp terminal agent: sessions, LSP/DAP, plan-yolo, subagents | ≥0.21 | manual (8 workflows) |
@@ -86,6 +87,7 @@ python3 scripts/validate.py          # CI runs this exact gate
 | [`hermes-skill-creator`](skills/hermes-skill-creator/) | [anthropics/skills](https://github.com/anthropics/skills) | Apache-2.0 |
 | [`hermes-profile-creator`](skills/hermes-profile-creator/) | [thedaviddias/souls-directory](https://github.com/thedaviddias/souls-directory) | MIT |
 | [`omp`](skills/omp/) | [zaharenok/omp-skill](https://github.com/zaharenok/omp-skill) | MIT |
+| [`deepseek-search`](skills/deepseek-search/) | [DeepSeek API docs](https://api-docs.deepseek.com/guides/search) | DeepSeek proprietary terms |
 
 > The other skill (`agy-antigravity-cli`) is an original adapter skill authored for this foundry.
 
