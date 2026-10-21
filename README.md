@@ -15,6 +15,10 @@
   <sub>An independent community project — not affiliated with or endorsed by Nous Research.</sub>
 </p>
 
+<p align="center">
+  <img src="./assets/hermes_skills_foundry_banner.webp" alt="Hermes Skills Foundry banner" width="100%">
+</p>
+
 ## Quick Start
 
 ### Install a skill
