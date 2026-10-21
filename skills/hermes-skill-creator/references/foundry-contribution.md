@@ -83,6 +83,17 @@ changed.
 Branch `feat/<skill-name>`; CI runs the same `scripts/validate.py` on every push and PR, so the
 PR must be green. Keep the PR to a single skill or one functional change.
 
+If the GitHub CLI is present and authenticated, open it from the command line — write the body to
+a file first, so the quoting survives:
+
+```bash
+gh pr create --base main --title "feat(skills): add <skill-name>" --body-file pr-body.md
+```
+
+Without `gh`, push the branch and open the PR from the compare URL GitHub prints. The body must
+say what the skill does, what it ships, and the verification you actually ran — never a pass rate
+you did not measure.
+
 ## Before you call it done
 
 - the gate is green and `scripts/quick_validate.py` passes on the skill;
