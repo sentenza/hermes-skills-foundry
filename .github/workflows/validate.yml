@@ -21,9 +21,6 @@ jobs:
       - name: Run validation gate
         run: python3 scripts/validate.py
 
-      - name: Install test dependencies
-        run: python3 -m pip install --upgrade requests
-
       - name: Run skill script tests
         run: python3 -m unittest discover -s tests
 

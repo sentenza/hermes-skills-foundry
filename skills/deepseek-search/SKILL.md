@@ -18,9 +18,20 @@ This skill gives Hermes direct access to **DeepSeek's native Search and Fetch AP
 ## Prerequisites
 
 - `DEEPSEEK_API_KEY` environment variable set (DeepSeek platform API key, **not** OpenRouter)
-- Python 3.10+ with `requests` (`pip install requests`)
+- Python 3.10+ — **standard library only**, nothing to install
 
-The skill bundles a helper script at `scripts/deepseek_search.py` — call it from the shell or import its functions. No external tool binary required.
+The skill bundles a helper script at `scripts/deepseek_search.py` — call it from the shell or import its functions. No external tool binary and no third-party package required.
+
+## Script path
+
+The helper runs from the **installed skill directory**, not from the agent's working directory. The working directory is the user's workspace, so a relative `scripts/deepseek_search.py` will not resolve.
+
+| Where the skill lives | Path to the script |
+|---|---|
+| Installed by Hermes | `~/.hermes/skills/<category>/deepseek-search/scripts/deepseek_search.py` |
+| In this repository | `skills/deepseek-search/scripts/deepseek_search.py` |
+
+Resolve the absolute path once per session, then reuse it. Below, `<skill-path>` stands for that directory.
 
 ## Secret handling
 
@@ -48,8 +59,8 @@ If a call fails with `DEEPSEEK_API_KEY environment variable not set` (exit 3), t
 
 | User says… | You do… |
 |------------|---------|
-| "search for…" / "find…" / "look up…" | Call `scripts/deepseek_search.py search …` |
-| "fetch this URL" / "get the content of…" | Call `scripts/deepseek_search.py fetch …` |
+| "search for…" / "find…" / "look up…" | Call `<skill-path>/scripts/deepseek_search.py search …` |
+| "fetch this URL" / "get the content of…" | Call `<skill-path>/scripts/deepseek_search.py fetch …` |
 | "recent news about…" / "latest on…" | Use `after:` operator in query |
 | "only from GitHub" / "exclude Reddit" | Use `site:` / `-site:` operators |
 
@@ -57,16 +68,16 @@ If a call fails with `DEEPSEEK_API_KEY environment variable not set` (exit 3), t
 
 ```bash
 # Search (JSON output)
-python scripts/deepseek_search.py search "DeepSeek V4 release" --count 5 --need-content
+python3 <skill-path>/scripts/deepseek_search.py search "DeepSeek V4 release" --count 5 --need-content
 
 # Search with operators
-python scripts/deepseek_search.py search "DeepSeek site:github.com OR site:huggingface.co lang:en after:2025" --count 10
+python3 <skill-path>/scripts/deepseek_search.py search "DeepSeek site:github.com OR site:huggingface.co lang:en after:2025" --count 10
 
 # Fetch single page as Markdown
-python scripts/deepseek_search.py fetch "https://example.com/article"
+python3 <skill-path>/scripts/deepseek_search.py fetch "https://example.com/article"
 
 # Cap page bodies (discovery search + selective fetch is usually cheaper)
-python scripts/deepseek_search.py search "query" --count 50 --need-content --max-content-chars 2000
+python3 <skill-path>/scripts/deepseek_search.py search "query" --count 50 --need-content --max-content-chars 2000
 ```
 
 ### Search arguments
@@ -181,7 +192,7 @@ Independent quotas for Search and Fetch. Check `X-RateLimit-*` headers on respon
 
 1. User asks a question requiring live data
 2. You construct the query (apply operators if user implies filters)
-3. Run `python scripts/deepseek_search.py search "query" [flags]`
+3. Run `python3 <skill-path>/scripts/deepseek_search.py search "query" [flags]`
 4. Parse results — cite sources with `[site_name](url)` format
 5. If user needs full page, run `fetch` on the URL
 
@@ -189,13 +200,14 @@ Independent quotas for Search and Fetch. Check `X-RateLimit-*` headers on respon
 
 ```
 User: "What's the latest on DeepSeek V4, only from GitHub or HuggingFace, English, after 2025?"
-You: python scripts/deepseek_search.py search "DeepSeek V4 site:github.com OR site:huggingface.co lang:en after:2025" --count 10
+You: python3 <skill-path>/scripts/deepseek_search.py search "DeepSeek V4 site:github.com OR site:huggingface.co lang:en after:2025" --count 10
 → Parse results, pick top by rerank_score/authority
-→ If user wants full text: python scripts/deepseek_search.py fetch "https://..."
+→ If user wants full text: python3 <skill-path>/scripts/deepseek_search.py fetch "https://..."
 ```
 
 ## Implementation notes
 
+- The helper uses only the Python standard library (`urllib`) — no package installation step, no import failures on a stock host
 - The helper script handles auth headers, error parsing, retries (408/429/5xx with exponential backoff, max 3, `Retry-After` honored)
 - Set `DEEPSEEK_API_KEY` in the environment — the Hermes profile `.env` or a shell export. The script reads it with `os.environ.get("DEEPSEEK_API_KEY")`; it does **not** read a `.env` file itself
 - Transport errors are split into transient (retried) and permanent (never retried); a malformed or non-object 200 response is reported as an error, not a crash

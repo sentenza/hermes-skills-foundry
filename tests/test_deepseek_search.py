@@ -1,15 +1,22 @@
 #!/usr/bin/env python3
 """Tests for skills/deepseek-search/scripts/deepseek_search.py.
 
+The transport is standard library only (urllib), so these tests need no
+third-party packages.
+
 Run: python3 -m unittest discover -s tests
-Requires: requests
 """
 
 import importlib.util
+import io
 import json
 import os
+import socket
+import ssl
 import sys
 import unittest
+import urllib.error
+import urllib.request
 import warnings
 from pathlib import Path
 from unittest import mock
@@ -27,28 +34,67 @@ ds = importlib.util.module_from_spec(_spec)
 sys.modules["deepseek_search"] = ds
 _spec.loader.exec_module(ds)
 
-INVALID = object()
+warnings.simplefilter("ignore", ResourceWarning)
+
+URL = "https://api.deepseek.com/v1/tools/search"
 
 
 class FakeResponse:
-    def __init__(self, status_code=200, json_data=None, text=None, headers=None):
-        self.status_code = status_code
-        self._json = json_data
-        self.text = text if text is not None else json.dumps(json_data)
-        self.headers = headers or {}
+    """Minimal stand-in for an urllib response object."""
 
-    def json(self):
-        if self._json is INVALID:
-            raise ValueError("Expecting value: line 1 column 1 (char 0)")
-        return self._json
+    def __init__(self, body, status=200, headers=None):
+        self.status = status
+        self.headers = headers or {}
+        self._body = body.encode("utf-8")
+
+    def read(self):
+        return self._body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class FakeOpener:
+    """Replacement for urllib's opener: returns queued items or raises queued errors."""
+
+    def __init__(self, items):
+        self.items = list(items)
+        self.requests = []
+
+    def open(self, request, timeout=None):
+        self.requests.append(request)
+        item = self.items.pop(0)
+        if callable(item) and not isinstance(item, Exception):
+            item = item()
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+
+class _Body(io.BytesIO):
+    """BytesIO that survives the implicit cleanup urllib does on an error body."""
+
+    def close(self):
+        pass
+
+
+def http_error(status, body, headers=None):
+    """Build the HTTPError urllib raises for a non-2xx response."""
+    return urllib.error.HTTPError(
+        URL, status, "error", headers or {}, _Body(body.encode("utf-8"))
+    )
 
 
 def api_error_body(message="boom", code="bad_request"):
-    return {"error": {"message": message, "code": code}}
+    return json.dumps({"error": {"message": message, "code": code}})
 
 
 class DeepSeekScriptTest(unittest.TestCase):
     def setUp(self):
+        warnings.simplefilter("ignore", ResourceWarning)
         self.env = mock.patch.dict(os.environ, {"DEEPSEEK_API_KEY": "test-key"})
         self.env.start()
         self.addCleanup(self.env.stop)
@@ -56,62 +102,80 @@ class DeepSeekScriptTest(unittest.TestCase):
         self.sleep_mock = self.sleep.start()
         self.addCleanup(self.sleep.stop)
 
-    def call(self, responses, side_effect=None):
-        patcher = mock.patch.object(ds.requests, "request")
-        request = patcher.start()
+    def opener(self, items):
+        fake = FakeOpener(items)
+        patcher = mock.patch.object(ds, "_OPENER", fake)
+        patcher.start()
         self.addCleanup(patcher.stop)
-        if side_effect is not None:
-            request.side_effect = side_effect
-        else:
-            request.side_effect = list(responses)
-        return request
+        return fake
+
+    # --- request shape -----------------------------------------------------
+
+    def test_request_carries_bearer_token_and_json_payload(self):
+        fake = self.opener([FakeResponse(json.dumps({"results": []}))])
+        ds.search("DeepSeek V4", count=3)
+        request = fake.requests[0]
+        self.assertEqual(request.get_header("Authorization"), "Bearer test-key")
+        payload = json.loads(request.data.decode("utf-8"))
+        self.assertEqual(payload["query"], "DeepSeek V4")
+        self.assertEqual(payload["count"], 3)
+        self.assertFalse(payload["need_content"])
+        self.assertEqual(request.get_method(), "POST")
+
+    def test_redirect_to_other_host_drops_authorization(self):
+        handler = ds._SafeRedirectHandler()
+        request = urllib.request.Request(URL, headers={"Authorization": "Bearer test-key"})
+
+        moved = handler.redirect_request(
+            request, None, 302, "Found", {}, "https://elsewhere.example.com/x"
+        )
+        self.assertIsNotNone(moved)
+        self.assertNotIn("Authorization", moved.headers)
+
+        same_host = handler.redirect_request(
+            request, None, 302, "Found", {}, "https://api.deepseek.com/v1/tools/other"
+        )
+        self.assertEqual(same_host.get_header("Authorization"), "Bearer test-key")
 
     # --- error body shapes -------------------------------------------------
 
     def test_error_body_shapes_raise_api_error(self):
         bodies = [
-            {"error": "unauthorized"},
-            [1, 2],
-            "plain string",
-            {"message": "boom"},
-            {},
+            json.dumps({"error": "unauthorized"}),
+            json.dumps([1, 2]),
+            json.dumps("plain string"),
+            json.dumps({"message": "boom"}),
+            json.dumps({}),
         ]
         for body in bodies:
             with self.subTest(body=body):
-                self.call([FakeResponse(400, json_data=body)])
+                self.opener([http_error(400, body)])
                 with self.assertRaises(ds.DeepSeekAPIError):
                     ds.search("q")
 
     def test_error_body_not_json_raises_api_error(self):
-        self.call(
-            [FakeResponse(502, json_data=INVALID, text="<html>gateway</html>")]
-            * (ds.MAX_RETRIES + 1)
+        self.opener(
+            [lambda: http_error(502, "<html>gateway</html>")] * (ds.MAX_RETRIES + 1)
         )
         with self.assertRaises(ds.DeepSeekRetryableError) as ctx:
             ds.search("q")
         self.assertIn("gateway", str(ctx.exception))
 
     def test_error_message_truncated(self):
-        self.call([FakeResponse(400, json_data=INVALID, text="x" * 5000)])
+        self.opener([http_error(400, "x" * 5000)])
         with self.assertRaises(ds.DeepSeekAPIError) as ctx:
             ds.search("q")
         self.assertLess(len(ctx.exception.message), 600)
 
     def test_request_id_reported(self):
-        self.call(
-            [
-                FakeResponse(
-                    400, json_data=api_error_body(), headers={"x-request-id": "req-42"}
-                )
-            ]
-        )
+        self.opener([http_error(400, api_error_body(), {"x-request-id": "req-42"})])
         with self.assertRaises(ds.DeepSeekAPIError) as ctx:
             ds.search("q")
         self.assertEqual(ctx.exception.request_id, "req-42")
         self.assertIn("request_id=req-42", str(ctx.exception))
 
     def test_request_id_from_body(self):
-        self.call([FakeResponse(400, json_data={"error": "x", "request_id": "req-7"})])
+        self.opener([http_error(400, json.dumps({"error": "x", "request_id": "req-7"}))])
         with self.assertRaises(ds.DeepSeekAPIError) as ctx:
             ds.search("q")
         self.assertEqual(ctx.exception.request_id, "req-7")
@@ -119,115 +183,111 @@ class DeepSeekScriptTest(unittest.TestCase):
     # --- success path ------------------------------------------------------
 
     def test_non_dict_success_raises_api_error(self):
-        self.call([FakeResponse(200, json_data=[1, 2])])
+        self.opener([FakeResponse(json.dumps([1, 2]))])
         with self.assertRaises(ds.DeepSeekAPIError) as ctx:
             ds.search("q")
         self.assertIn("Unexpected response shape", str(ctx.exception))
 
     def test_invalid_json_success_raises_api_error(self):
-        self.call([FakeResponse(200, json_data=INVALID, text="not json")])
+        self.opener([FakeResponse("not json")])
         with self.assertRaises(ds.DeepSeekAPIError) as ctx:
             ds.search("q")
         self.assertIn("Invalid JSON", str(ctx.exception))
 
     def test_success_returns_dict(self):
-        self.call([FakeResponse(200, json_data={"results": []})])
+        self.opener([FakeResponse(json.dumps({"results": []}))])
         self.assertEqual(ds.search("q"), {"results": []})
 
     # --- retry semantics ---------------------------------------------------
 
     def test_429_retries_then_succeeds(self):
-        request = self.call(
-            [
-                FakeResponse(429, json_data=api_error_body("rate limited")),
-                FakeResponse(200, json_data={"results": []}),
-            ]
+        fake = self.opener(
+            [http_error(429, api_error_body("rate limited")), FakeResponse(json.dumps({"results": []}))]
         )
         self.assertEqual(ds.search("q"), {"results": []})
-        self.assertEqual(request.call_count, 2)
+        self.assertEqual(len(fake.requests), 2)
 
     def test_retry_after_header_is_honored(self):
-        self.call(
+        self.opener(
             [
-                FakeResponse(
-                    429, json_data=api_error_body("rate limited"), headers={"Retry-After": "5"}
-                ),
-                FakeResponse(200, json_data={"results": []}),
+                http_error(429, api_error_body("rate limited"), {"Retry-After": "5"}),
+                FakeResponse(json.dumps({"results": []})),
             ]
         )
         ds.search("q")
         self.assertGreaterEqual(self.sleep_mock.call_args_list[0].args[0], 5.0)
 
     def test_retry_after_is_capped(self):
-        self.call(
+        self.opener(
             [
-                FakeResponse(
-                    429, json_data=api_error_body("rate limited"), headers={"Retry-After": "600"}
-                ),
-                FakeResponse(200, json_data={"results": []}),
+                http_error(429, api_error_body("rate limited"), {"Retry-After": "600"}),
+                FakeResponse(json.dumps({"results": []})),
             ]
         )
         ds.search("q")
         self.assertLessEqual(self.sleep_mock.call_args_list[0].args[0], ds.MAX_RETRY_AFTER)
 
     def test_retryable_status_exhausts_to_retryable_error(self):
-        request = self.call(
-            [FakeResponse(503, json_data=api_error_body("down"))] * (ds.MAX_RETRIES + 1)
+        fake = self.opener(
+            [lambda: http_error(503, api_error_body("down"))] * (ds.MAX_RETRIES + 1)
         )
         with self.assertRaises(ds.DeepSeekRetryableError):
             ds.search("q")
-        self.assertEqual(request.call_count, ds.MAX_RETRIES + 1)
+        self.assertEqual(len(fake.requests), ds.MAX_RETRIES + 1)
 
     def test_timeout_is_retried_then_retryable_error(self):
-        request = self.call(
-            [], side_effect=ds.requests.exceptions.Timeout("timed out")
+        fake = self.opener(
+            [lambda: urllib.error.URLError(socket.timeout("timed out"))]
+            * (ds.MAX_RETRIES + 1)
         )
         with self.assertRaises(ds.DeepSeekRetryableError):
             ds.search("q")
-        self.assertEqual(request.call_count, ds.MAX_RETRIES + 1)
+        self.assertEqual(len(fake.requests), ds.MAX_RETRIES + 1)
 
     def test_ssl_error_is_not_retried(self):
-        request = self.call([], side_effect=ds.requests.exceptions.SSLError("bad cert"))
+        fake = self.opener(
+            [urllib.error.URLError(ssl.SSLCertVerificationError("bad cert"))]
+        )
         with self.assertRaises(ds.DeepSeekAPIError):
             ds.search("q")
-        self.assertEqual(request.call_count, 1)
+        self.assertEqual(len(fake.requests), 1)
 
-    def test_proxy_error_is_not_retried(self):
-        request = self.call([], side_effect=ds.requests.exceptions.ProxyError("proxy"))
+    def test_dns_error_is_not_retried(self):
+        fake = self.opener([urllib.error.URLError(socket.gaierror("unknown host"))])
         with self.assertRaises(ds.DeepSeekAPIError):
             ds.search("q")
-        self.assertEqual(request.call_count, 1)
+        self.assertEqual(len(fake.requests), 1)
 
     # --- content cap -------------------------------------------------------
 
     def test_max_content_chars_truncates_results(self):
-        body = {"results": [{"title": "t", "content": "y" * 5000}]}
-        self.call([FakeResponse(200, json_data=body)])
+        body = json.dumps({"results": [{"title": "t", "content": "y" * 5000}]})
+        self.opener([FakeResponse(body)])
         data = ds.search("q", need_content=True, count=1, max_content_chars=100)
         self.assertTrue(data["results"][0]["content"].startswith("y" * 100))
         self.assertIn("truncated", data["results"][0]["content"])
         self.assertLess(len(data["results"][0]["content"]), 200)
 
     def test_max_content_chars_truncates_fetch(self):
-        self.call([FakeResponse(200, json_data={"title": "t", "content": "z" * 5000})])
+        self.opener([FakeResponse(json.dumps({"title": "t", "content": "z" * 5000}))])
         data = ds.fetch("https://example.com", max_content_chars=50)
         self.assertTrue(data["content"].startswith("z" * 50))
 
     def test_content_untouched_without_cap(self):
-        body = {"results": [{"content": "y" * 5000}]}
-        self.call([FakeResponse(200, json_data=body)])
+        body = json.dumps({"results": [{"content": "y" * 5000}]})
+        self.opener([FakeResponse(body)])
         data = ds.search("q", count=1)
         self.assertEqual(len(data["results"][0]["content"]), 5000)
 
     def test_need_content_with_high_count_warns(self):
-        self.call([FakeResponse(200, json_data={"results": []})])
+        self.opener([FakeResponse(json.dumps({"results": []}))])
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             ds.search("q", need_content=True, count=50)
         self.assertTrue(any("full page bodies" in str(w.message) for w in caught))
 
     def test_need_content_with_low_count_does_not_warn(self):
-        self.call([FakeResponse(200, json_data={"results": []})])
+        self.opener([FakeResponse(json.dumps({"results": []}))])
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
             ds.search("q", need_content=True, count=5)
