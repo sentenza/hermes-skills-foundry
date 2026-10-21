@@ -68,6 +68,8 @@ Change the repo here, push, then update.
 git clone https://github.com/sentenza/hermes-skills-foundry.git
 cd hermes-skills-foundry
 python3 scripts/validate.py          # CI runs this exact gate
+python3 scripts/test_validate.py     # gate unit tests
+python3 -m unittest discover -s tests # skill script tests
 ```
 
 ## Skills
@@ -104,7 +106,7 @@ Every skill here answers three questions up front.
 | Where did it come from? | Authored here, or ported from another harness with explicit attribution and licence. |
 | Will it run on my Hermes? | A declared, tested `hermes_requires` version range — not "latest". |
 
-A skill enters the foundry only if it clears four gates.
+A skill enters the foundry only if it clears five gates.
 
 | Gate | Check |
 |---|---|
@@ -112,8 +114,9 @@ A skill enters the foundry only if it clears four gates.
 | **Behaviour** | An eval fixture defined in `evals/`, with a measured pass rate or a documented `pending` status where a benchmark cannot discriminate |
 | **Provenance** | Every ported skill carries an `adapted from <repo> (<LICENSE>)` header, the upstream licence, and a `NOTICE` of modifications |
 | **Compatibility** | `hermes_requires` declares a Hermes version range the skill was tested against |
+| **Secret hygiene** | No credential files (`.env`, `*.pem`) and no credential literals inside a skill directory — secrets are read from the environment, never shipped |
 
-Gates 1, 3 and 4 run in CI on every push. Gate 2 lives in the skill's own `evals/` directory and is surfaced in the table above. A recorded pass rate is only meaningful for objectively verifiable skills; document- or judgment-producing skills ship an honest `pending` fixture rather than a fabricated number.
+Gates 1, 3, 4 and 5 run in CI on every push. Gate 2 lives in the skill's own `evals/` directory and is surfaced in the table above. A recorded pass rate is only meaningful for objectively verifiable skills; document- or judgment-producing skills ship an honest `pending` fixture rather than a fabricated number.
 
 <details>
 <summary><strong>Background: Why another skills repo?</strong></summary>
@@ -144,7 +147,7 @@ A ported skill must:
 2. ship the upstream licence text in its own directory and a `NOTICE` recording the upstream, the licence, and the modifications;
 3. mark each file it changed with a prominent change notice;
 4. be rewritten to Hermes' conventions, not copied verbatim;
-5. pass all four gates, exactly like an authored skill.
+5. pass all five gates, exactly like an authored skill.
 
 The upstream project keeps its licence; the credit stays visible. Nothing is ported from a repo that carries no licence.
 
@@ -165,7 +168,7 @@ hermes skills install sentenza/hermes-skills-foundry/skills/hermes-skill-creator
 
 Then ask it to "create a skill for X". Once the skill is drafted and tested, land it here:
 
-- follow the four gates in [`docs/standard.md`](docs/standard.md);
+- follow the five gates in [`docs/standard.md`](docs/standard.md);
 - the concrete procedure — layout, frontmatter, evals fixture, port attribution and licence,
   running the gate, opening the PR — is in the skill's own
   [`references/foundry-contribution.md`](skills/hermes-skill-creator/references/foundry-contribution.md);
@@ -180,6 +183,17 @@ python3 scripts/validate.py          # CI runs this exact gate
 That procedure ships inside the skill's `references/` on purpose: an installed skill has no
 access to this repo's `docs/`, so anything its workflow needs at runtime travels with it. The
 foundry docs *link* to those references rather than copying them — one source, no drift.
+
+### Working with an AI agent
+
+Two files at the repository root carry the agent-facing instructions:
+
+| File | Holds |
+|---|---|
+| [`HERMES.md`](HERMES.md) | Behavioral rules — how to work here. The entry point for Hermes. |
+| [`AGENTS.md`](AGENTS.md) | Repository rules — gates, layout, commands, conventions. |
+
+`HERMES.md` links to `AGENTS.md`; read both before changing anything.
 
 ### Contribution checklist
 
