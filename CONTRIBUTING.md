@@ -68,6 +68,7 @@ All contributions to this repository are submitted under the MIT Licence (inboun
 
 - Write clear, imperative commit messages (for example, `feat(skills): add hermes-profile-creator` or `fix(gate): handle nested metadata`).
 - Open pull requests against the default repository branch.
+- If the GitHub CLI is available and authenticated, `gh pr create --base main --title "feat(skills): add <skill-name>" --body-file pr-body.md` opens it from the command line; otherwise push the branch and use the compare URL GitHub prints.
 - Keep pull requests focused on a single skill or functional change.
 - Ensure `python3 scripts/validate.py` passes cleanly on your branch before opening the pull request.
 
