@@ -13,3 +13,11 @@ venv/
 .vscode/
 .idea/
 *.swp
+
+# Secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.pfx

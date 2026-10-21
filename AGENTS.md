@@ -10,11 +10,12 @@ python3 scripts/validate.py          # run the gate (CI runs this)
 
 ## Repository Purpose
 
-Curated, version-pinned skills for Hermes Agent. Every skill must pass four gates:
+Curated, version-pinned skills for Hermes Agent. Every skill must pass five gates:
 1. **Structure** — valid `SKILL.md` frontmatter, layout, reference integrity
 2. **Behaviour** — `evals/prompts.md` + `evals/results.json` with honest status
 3. **Provenance** — attribution header + upstream licence for ports
 4. **Compatibility** — `hermes_requires` semver range, works on stock Hermes
+5. **Secret hygiene** — no credential files (`.env`, `*.pem`) or credential literals in a skill directory
 
 ## Skill Directory Layout
 
