@@ -158,6 +158,22 @@ All errors follow OpenAI-compatible format:
 
 **Retry policy:** Only retry 408, 429, 5xx. Do not retry other 4xx without changing request.
 
+### Request ID
+
+Error responses carry `x-request-id` (some responses also include a `request_id` field in the body). The helper surfaces it in every raised error as `request_id=…` — quote it in support requests, it is how a call is traced.
+
+### Helper error taxonomy
+
+| Class | Raised for | CLI exit |
+|-------|-----------|----------|
+| `DeepSeekAPIError` | 4xx other than 408/429, permanent transport errors (SSL, proxy, invalid URL), malformed or non-object 200 responses | 1 |
+| `DeepSeekRetryableError` | 408/429/5xx after 3 retries, and transport timeouts or connection errors after 3 retries | 2 |
+| `ValueError` / `RuntimeError` | Invalid arguments, `DEEPSEEK_API_KEY` not set | 3 |
+
+Transient transport failures (timeout, connection reset, truncated chunk) are retried; permanent ones (certificate, proxy, malformed URL) are not. A `Retry-After` header on 429/503 is honored, capped at 30 s.
+
+Error bodies are parsed defensively: `error` may be an object, a string, or absent, and the body may not be JSON at all. Raw body text is truncated to 500 characters in the error message.
+
 ---
 
 ## Billing
@@ -172,8 +188,24 @@ All errors follow OpenAI-compatible format:
 - Fetch: returns page content
 - Failed requests, empty results, timeouts = **not billed**
 - `count` does not affect price
+- Price is per request, not per byte — a large response costs tokens and context, not more money
+- A request that succeeded server-side but whose response was lost is billed again, which is why the retry loop belongs to the helper and not to the caller
 
 > Free when used via DeepSeek Harness, Claude Code, or Codex until 2026-11-01 00:00 Beijing time.
+
+---
+
+## Response Size
+
+`need_content=true` returns the full page Markdown for **every** result, so `count=50` with `need_content` returns 50 full pages. The API does not cap this.
+
+| Control | Effect |
+|---------|--------|
+| `count` (1–50, default 10) | Number of results returned |
+| `need_content` (default false) | Adds full page bodies to each result |
+| `max_content_chars` (helper-side, optional) | Truncates each page body to N characters with a `... [truncated]` marker |
+
+The helper warns when `need_content` is combined with `count > 20`. The cap is applied client-side after the response arrives — it does not reduce what the API transfers.
 
 ---
 
@@ -246,7 +278,9 @@ print(page["content"])
 ## Notes for Skill Implementation
 
 - The helper script `scripts/deepseek_search.py` wraps these endpoints
-- Implements retry with exponential backoff (base 1.5s, max 3 retries) for 408/429/5xx
+- Implements retry with exponential backoff (base 1.5s, max 3 retries) for 408/429/5xx, honoring `Retry-After` (capped at 30s)
+- Retries only transient transport failures; certificate, proxy and malformed-URL failures fail immediately
 - Validates input constraints before sending
-- Returns structured errors distinguishing retryable vs non-retryable
-- Requires `DEEPSEEK_API_KEY` env var (DeepSeek platform, not OpenRouter)
+- Returns structured errors distinguishing retryable vs non-retryable, each carrying the API `request_id`
+- `max_content_chars` caps page bodies client-side; without it the response is passed through unchanged
+- Requires `DEEPSEEK_API_KEY` env var (DeepSeek platform, not OpenRouter); the value is never logged, printed, or written to disk
