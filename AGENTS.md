@@ -1,4 +1,4 @@
-# AGENTS.md — Skills Foundry
+# AGENTS.md — Hermes Skills Foundry
 
 Repository rules for any AI agent working here. Read this file end to end: the behavioral rules say **how to work**, the rest says **what this repository requires**.
 
@@ -82,11 +82,11 @@ A change is done when the gate passes **and** the tests pass. Both are stdlib-on
 
 ## Repository Purpose
 
-Curated, version-pinned skills, each declaring the runtime range it supports. Every skill must pass five gates:
+Curated, version-pinned skills for Hermes Agent. Every skill must pass five gates:
 1. **Structure** — valid `SKILL.md` frontmatter, layout, reference integrity
 2. **Behaviour** — `evals/prompts.md` + `evals/results.json` with honest status
 3. **Provenance** — attribution header + upstream licence for ports
-4. **Compatibility** — `hermes_requires` semver range, works on a stock install
+4. **Compatibility** — `hermes_requires` semver range, works on stock Hermes
 5. **Secret hygiene** — no credential files (`.env`, `*.pem`) or credential literals in a skill directory
 
 ## Skill Directory Layout
@@ -129,7 +129,7 @@ Never fabricate pass rates.
 ## Conventions
 
 - Edit `README.md` skills table when adding/removing skills
-- Update the compatibility badge in README when the `hermes_requires` floor changes
+- Update Hermes badge in README when `hermes_requires` floor changes
 - Keep `CONTRIBUTING.md` and `docs/standard.md` in sync
 - No empty directories (validation ignores them but they're noise)
 - Commit messages: `feat(skills): ...`, `fix(gate): ...`, etc.
