@@ -190,10 +190,10 @@ Two files at the repository root carry the agent-facing instructions:
 
 | File | Holds |
 |---|---|
-| [`AGENTS.md`](AGENTS.md) | The standard — behavioral rules and repository rules. Read it first. |
-| [`HERMES.md`](HERMES.md) | What is specific to Hermes — profile paths, secrets, skill updates, untrusted tool output. |
+| [`AGENTS.md`](AGENTS.md) | The standard — behavioral rules, repository rules, and how to work with skills. |
+| [`HERMES.md`](HERMES.md) | The entry point a Hermes agent reads first: a pointer to `AGENTS.md`. |
 
-`HERMES.md` points back to `AGENTS.md` for the full picture.
+Read `AGENTS.md` for the full picture.
 
 ### Contribution checklist
 
