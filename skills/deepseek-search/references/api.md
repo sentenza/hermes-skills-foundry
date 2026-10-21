@@ -245,31 +245,32 @@ curl https://api.deepseek.com/v1/tools/fetch \
 
 ## Python Example
 
-```python
-import requests
+Standard library only:
 
-headers = {
-    "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
+```python
+import json
+import os
+import urllib.request
+
+HEADERS = {
+    "Authorization": f"Bearer {os.environ['DEEPSEEK_API_KEY']}",
     "Content-Type": "application/json",
 }
 
-# Search
-resp = requests.post(
-    "https://api.deepseek.com/v1/tools/search",
-    headers=headers,
-    json={"query": "DeepSeek V4", "count": 5, "need_content": True},
-)
-resp.raise_for_status()
-results = resp.json()["results"]
 
-# Fetch
-resp = requests.post(
-    "https://api.deepseek.com/v1/tools/fetch",
-    headers=headers,
-    json={"url": results[0]["url"]},
-)
-resp.raise_for_status()
-page = resp.json()
+def post(path, payload):
+    request = urllib.request.Request(
+        f"https://api.deepseek.com{path}",
+        data=json.dumps(payload).encode("utf-8"),
+        headers=HEADERS,
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        return json.loads(response.read())
+
+
+results = post("/v1/tools/search", {"query": "DeepSeek V4", "count": 5, "need_content": True})
+page = post("/v1/tools/fetch", {"url": results["results"][0]["url"]})
 print(page["content"])
 ```
 
@@ -277,9 +278,10 @@ print(page["content"])
 
 ## Notes for Skill Implementation
 
-- The helper script `scripts/deepseek_search.py` wraps these endpoints
+- The helper script `scripts/deepseek_search.py` wraps these endpoints using only the Python standard library (`urllib`) — no third-party dependency
 - Implements retry with exponential backoff (base 1.5s, max 3 retries) for 408/429/5xx, honoring `Retry-After` (capped at 30s)
 - Retries only transient transport failures; certificate, proxy and malformed-URL failures fail immediately
+- Follows redirects, but strips the `Authorization` header when the redirect target is a different host — the credential is never forwarded off-host
 - Validates input constraints before sending
 - Returns structured errors distinguishing retryable vs non-retryable, each carrying the API `request_id`
 - `max_content_chars` caps page bodies client-side; without it the response is passed through unchanged

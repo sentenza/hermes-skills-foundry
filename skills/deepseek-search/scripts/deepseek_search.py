@@ -2,10 +2,13 @@
 """
 DeepSeek Search & Fetch API helper.
 
+Standard library only — no third-party packages, so it runs on a stock
+Hermes host with no install step.
+
 Usage (CLI):
-    python deepseek_search.py search "query" [--count N] [--need-content] [--ori-question STR]
-                                   [--localization IP] [--max-content-chars N] [--json]
-    python deepseek_search.py fetch "url" [--max-content-chars N] [--json]
+    python3 <skill-path>/scripts/deepseek_search.py search "query" [--count N] [--need-content]
+        [--ori-question STR] [--localization IP] [--max-content-chars N] [--json]
+    python3 <skill-path>/scripts/deepseek_search.py fetch "url" [--max-content-chars N] [--json]
 
 Usage (library):
     from deepseek_search import search, fetch
@@ -22,14 +25,18 @@ Exit codes (CLI):
 """
 
 import argparse
+import http.client
 import json
 import os
+import socket
+import ssl
 import sys
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 import warnings
 from typing import Any, Dict, List, Optional, Tuple
-
-import requests
 
 __all__ = ["search", "fetch", "DeepSeekAPIError", "DeepSeekRetryableError"]
 
@@ -45,21 +52,22 @@ MAX_RETRY_AFTER = 30.0  # seconds; cap on a server-suggested wait
 MAX_ERROR_TEXT = 500  # chars of raw response body echoed back in an error
 NEED_CONTENT_COUNT_WARN = 20  # above this, need_content returns whole page bodies
 TRUNCATION_MARKER = "... [truncated]"
+USER_AGENT = "hermes-deepseek-search/0.1"
 
-# Transport failures worth retrying. SSLError and ProxyError subclass
-# ConnectionError but are permanent, so they are excluded explicitly.
-_RETRYABLE_EXCEPTIONS = (
-    requests.Timeout,
-    requests.ConnectionError,
-    requests.exceptions.ChunkedEncodingError,
-    requests.exceptions.ContentDecodingError,
+# Transport failures worth retrying.
+_RETRYABLE_REASONS = (
+    socket.timeout,
+    TimeoutError,
+    ConnectionError,
+    http.client.IncompleteRead,
 )
-_PERMANENT_EXCEPTIONS = (
-    requests.exceptions.SSLError,
-    requests.exceptions.ProxyError,
-    requests.exceptions.InvalidURL,
-    requests.exceptions.MissingSchema,
-    requests.exceptions.InvalidSchema,
+# Transport failures that will not fix themselves on a retry.
+_PERMANENT_REASONS = (
+    ssl.SSLError,
+    ssl.CertificateError,
+    socket.gaierror,
+    http.client.BadStatusLine,
+    ValueError,
 )
 
 
@@ -96,6 +104,25 @@ class DeepSeekRetryableError(Exception):
         super().__init__(detail)
 
 
+class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Follow redirects, but never forward the credential to another host."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is None:
+            return None
+        old_host = (req.host or "").lower()
+        new_host = urllib.parse.urlsplit(newurl).netloc.lower()
+        if new_host != old_host:
+            new.headers = {
+                k: v for k, v in new.headers.items() if k.lower() != "authorization"
+            }
+        return new
+
+
+_OPENER = urllib.request.build_opener(_SafeRedirectHandler())
+
+
 def _get_headers() -> Dict[str, str]:
     api_key = os.environ.get("DEEPSEEK_API_KEY")
     if not api_key:
@@ -103,6 +130,7 @@ def _get_headers() -> Dict[str, str]:
     return {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
+        "User-Agent": USER_AGENT,
     }
 
 
@@ -120,20 +148,30 @@ def _as_str(value: Any) -> Optional[str]:
     return None if value is None else str(value)
 
 
-def _header_request_id(resp: Any) -> Optional[str]:
-    headers = getattr(resp, "headers", None) or {}
-    try:
-        return headers.get("x-request-id") or headers.get("request-id")
-    except AttributeError:
+def _header(headers: Any, name: str) -> Optional[str]:
+    """Read a header from a message mapping or a plain dict, case-insensitively."""
+    if headers is None:
         return None
+    for key in (name, name.lower(), name.upper()):
+        try:
+            value = headers.get(key)
+        except AttributeError:
+            return None
+        if value:
+            return value
+    return None
 
 
-def _extract_error(resp: Any) -> Tuple[str, Optional[str], Optional[str]]:
+def _header_request_id(headers: Any) -> Optional[str]:
+    return _header(headers, "x-request-id") or _header(headers, "request-id")
+
+
+def _extract_error(headers: Any, body: str) -> Tuple[str, Optional[str], Optional[str]]:
     """Return (message, code, request_id) from an error response. Never raises."""
-    request_id = _header_request_id(resp)
-    text = _truncate(getattr(resp, "text", "") or "")
+    request_id = _header_request_id(headers)
+    text = _truncate(body)
     try:
-        data = resp.json()
+        data = json.loads(body)
     except ValueError:
         return text, None, request_id
 
@@ -152,19 +190,27 @@ def _extract_error(resp: Any) -> Tuple[str, Optional[str], Optional[str]]:
     return text, None, request_id
 
 
-def _classify_exception(e: Exception) -> str:
-    """Classify a transport exception as 'retryable' or 'permanent'."""
-    if isinstance(e, _PERMANENT_EXCEPTIONS):
+def _classify_reason(reason: Any) -> str:
+    """Classify an underlying transport failure as 'retryable' or 'permanent'."""
+    if isinstance(reason, _PERMANENT_REASONS):
         return "permanent"
-    if isinstance(e, _RETRYABLE_EXCEPTIONS):
+    if isinstance(reason, _RETRYABLE_REASONS):
+        return "retryable"
+    if isinstance(reason, OSError):
         return "retryable"
     return "permanent"
 
 
-def _retry_after_seconds(resp: Any) -> Optional[float]:
+def _classify_exception(e: Exception) -> str:
+    """Classify a transport exception as 'retryable' or 'permanent'."""
+    if isinstance(e, urllib.error.URLError):
+        return _classify_reason(e.reason)
+    return _classify_reason(e)
+
+
+def _retry_after_seconds(headers: Any) -> Optional[float]:
     """Server-suggested wait from the Retry-After header (delta-seconds form only)."""
-    headers = getattr(resp, "headers", None) or {}
-    raw = headers.get("Retry-After")
+    raw = _header(headers, "Retry-After")
     if raw is None:
         return None
     try:
@@ -173,32 +219,53 @@ def _retry_after_seconds(resp: Any) -> Optional[float]:
         return None
 
 
-def _sleep_before_retry(attempt: int, resp: Any = None) -> None:
+def _sleep_before_retry(attempt: int, headers: Any = None) -> None:
     """Back off exponentially, honoring Retry-After when the server sets it."""
     delay = RETRY_BACKOFF_BASE**attempt
-    if resp is not None:
-        retry_after = _retry_after_seconds(resp)
+    if headers is not None:
+        retry_after = _retry_after_seconds(headers)
         if retry_after is not None:
             delay = max(delay, min(retry_after, MAX_RETRY_AFTER))
     time.sleep(delay)
 
 
-def _parse_success(resp: Any) -> Dict[str, Any]:
-    """Parse a 200 response into a dict, or raise a clean error."""
-    request_id = _header_request_id(resp)
+def _parse_success(status: int, headers: Any, body: str) -> Dict[str, Any]:
+    """Parse a 2xx response into a dict, or raise a clean error."""
+    request_id = _header_request_id(headers)
     try:
-        data = resp.json()
+        data = json.loads(body)
     except ValueError:
         raise DeepSeekAPIError(
-            200, f"Invalid JSON in response: {_truncate(getattr(resp, 'text', ''))}", request_id=request_id
+            status, f"Invalid JSON in response: {_truncate(body)}", request_id=request_id
         )
     if not isinstance(data, dict):
         raise DeepSeekAPIError(
-            200,
+            status,
             f"Unexpected response shape: {type(data).__name__} (expected object)",
             request_id=request_id,
         )
     return data
+
+
+def _perform_request(
+    url: str, headers: Dict[str, str], payload: Dict[str, Any]
+) -> Tuple[int, Any, str]:
+    """Perform one HTTP POST. Returns (status, headers, body). Raises on transport failure."""
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    request = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    try:
+        with _OPENER.open(request, timeout=DEFAULT_TIMEOUT) as response:
+            return (
+                response.status,
+                response.headers,
+                response.read().decode("utf-8", errors="replace"),
+            )
+    except urllib.error.HTTPError as exc:  # 4xx / 5xx arrive here
+        return (
+            exc.code,
+            exc.headers,
+            exc.read().decode("utf-8", errors="replace"),
+        )
 
 
 def _cap_content(data: Dict[str, Any], max_content_chars: Optional[int]) -> Dict[str, Any]:
@@ -230,32 +297,30 @@ def _request_with_retry(
 
     for attempt in range(MAX_RETRIES + 1):
         try:
-            resp = requests.request(
-                method, url, headers=headers, json=payload, timeout=DEFAULT_TIMEOUT
-            )
-        except requests.RequestException as e:
-            kind = _classify_exception(e)
+            status, response_headers, body = _perform_request(url, headers, payload)
+        except (urllib.error.URLError, OSError, http.client.HTTPException) as exc:
+            kind = _classify_exception(exc)
             if kind == "retryable":
                 if attempt < MAX_RETRIES:
                     _sleep_before_retry(attempt)
                     continue
                 raise DeepSeekRetryableError(
-                    0, f"Network error after {MAX_RETRIES} retries: {_truncate(str(e))}"
+                    0, f"Network error after {MAX_RETRIES} retries: {_truncate(str(exc))}"
                 )
-            raise DeepSeekAPIError(0, f"Network error (permanent): {_truncate(str(e))}")
+            raise DeepSeekAPIError(0, f"Network error (permanent): {_truncate(str(exc))}")
 
-        if resp.status_code == 200:
-            return _parse_success(resp)
+        if 200 <= status < 300:
+            return _parse_success(status, response_headers, body)
 
-        err_msg, err_code, request_id = _extract_error(resp)
+        err_msg, err_code, request_id = _extract_error(response_headers, body)
 
-        if resp.status_code in retryable_statuses:
+        if status in retryable_statuses:
             if attempt < MAX_RETRIES:
-                _sleep_before_retry(attempt, resp)
+                _sleep_before_retry(attempt, response_headers)
                 continue
-            raise DeepSeekRetryableError(resp.status_code, err_msg, request_id)
+            raise DeepSeekRetryableError(status, err_msg, request_id)
 
-        raise DeepSeekAPIError(resp.status_code, err_msg, err_code, request_id)
+        raise DeepSeekAPIError(status, err_msg, err_code, request_id)
 
     # Should not reach here
     raise DeepSeekRetryableError(0, "Max retries exceeded")
@@ -410,10 +475,10 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python deepseek_search.py search "DeepSeek V4 release" --count 5 --need-content
-  python deepseek_search.py search "DeepSeek site:github.com OR site:huggingface.co lang:en after:2025" --count 10
-  python deepseek_search.py fetch "https://example.com/article"
-  python deepseek_search.py search "query" --count 50 --need-content --max-content-chars 2000
+  python3 deepseek_search.py search "DeepSeek V4 release" --count 5 --need-content
+  python3 deepseek_search.py search "DeepSeek site:github.com OR site:huggingface.co lang:en after:2025" --count 10
+  python3 deepseek_search.py fetch "https://example.com/article"
+  python3 deepseek_search.py search "query" --count 50 --need-content --max-content-chars 2000
         """,
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
