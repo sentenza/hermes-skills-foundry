@@ -4,6 +4,10 @@ description: Direct access to DeepSeek's native Search and Fetch APIs for live w
 hermes_requires: ">=0.21"
 author: sentenza
 license: MIT
+env_requires:
+  - name: DEEPSEEK_API_KEY
+    description: DeepSeek platform API key (not OpenRouter). Read from the environment only; never commit it.
+    required: true
 distribution_owned:
   - SKILL.md
   - distribution.yaml

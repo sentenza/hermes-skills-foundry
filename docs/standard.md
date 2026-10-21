@@ -114,7 +114,7 @@ A recorded pass rate is required where the skill's output is objectively verifia
 
 ## 8. Normative Gates
 
-Admission to the repository requires satisfying four mandatory gates:
+Admission to the repository requires satisfying five mandatory gates:
 
 1. **Structure Gate**: The skill MUST adhere to the directory layout, YAML frontmatter schema, length constraints, naming rules, and reference integrity checked by `scripts/validate.py`.
 2. **Behaviour Gate**: The skill MUST provide an actual eval fixture in `evals/` (`prompts.md` and `results.json`). A recorded, measured pass rate is expected for objectively verifiable skills; for document- or judgment-producing skills an honest `pending` status, with the reason stated, satisfies the gate. Fabricated, padded, or non-discriminating results do not.
@@ -138,5 +138,11 @@ Admission to the repository requires satisfying four mandatory gates:
    Every other skill keeps the default rule: any such integration MUST be optional and
    configurable, and the skill MUST keep working — and say so honestly — when the tool is
    not installed.
+
+5. **Secret Hygiene Gate**: A skill MUST NOT ship credentials. Credential files (`.env`,
+   `*.pem`, `*.p12`, `*.pfx`) and credential literals (provider keys, GitHub tokens, AWS
+   access key ids, private key blocks) MUST NOT appear inside a skill directory. Secrets
+   are read from the environment or from the platform's secret store, and MUST be
+   referenced by variable name — never by value. `scripts/validate.py` enforces this.
 
 > The step-by-step procedure for landing a skill in this repository ships with the [`hermes-skill-creator`](../skills/hermes-skill-creator/) skill, at [`references/foundry-contribution.md`](../skills/hermes-skill-creator/references/foundry-contribution.md). This document remains the normative rule; the skill's reference is the operational procedure.

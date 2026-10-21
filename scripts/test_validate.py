@@ -17,6 +17,9 @@ from validate import (
     _check_port_attribution,
     _check_hermes_requires,
     _check_references,
+    _check_secrets,
+    _is_secret_file,
+    _find_secret_literals,
     _collect,
     parse_frontmatter,
     extract_hermes_requires,
@@ -217,6 +220,76 @@ def test_validate_name_mismatch():
         assert "does not match directory" in errors[0]
 
 
+def test_is_secret_file():
+    """_is_secret_file: credential files flagged, templates allowed."""
+    assert _is_secret_file(".env") is True
+    assert _is_secret_file(".env.local") is True
+    assert _is_secret_file("server.pem") is True
+    assert _is_secret_file("cert.p12") is True
+    assert _is_secret_file(".env.example") is False
+    assert _is_secret_file(".env.template") is False
+    assert _is_secret_file("SKILL.md") is False
+    assert _is_secret_file("environment.md") is False
+
+
+def test_find_secret_literals():
+    """_find_secret_literals: credential shapes flagged, placeholders ignored."""
+    assert _find_secret_literals("key = sk-" + "a" * 32) == ["provider key"]
+    assert _find_secret_literals("token ghp_" + "b" * 36) == ["github token"]
+    assert _find_secret_literals("id AKIA" + "C" * 16) == ["aws access key id"]
+    assert "private key block" in _find_secret_literals(
+        "-----BEGIN RSA PRIVATE KEY-----"
+    )
+    # placeholders and env references are not credentials
+    assert _find_secret_literals("sk-EXAMPLEKEYEXAMPLEKEYEXAMPLEKEY12") == []
+    assert _find_secret_literals("Bearer $DEEPSEEK_API_KEY") == []
+    assert _find_secret_literals("export DEEPSEEK_API_KEY=$(cat key)") == []
+
+
+def test_check_secrets():
+    """_check_secrets: reports credential files and literals, values never echoed."""
+    with tempfile.TemporaryDirectory() as tmp:
+        skill = os.path.join(tmp, "my-skill")
+        os.makedirs(os.path.join(skill, "scripts"))
+        with open(os.path.join(skill, "SKILL.md"), "w") as f:
+            f.write("---\nname: my-skill\n---\n")
+        with open(os.path.join(skill, ".env"), "w") as f:
+            f.write("DEEPSEEK_API_KEY=sk-realsecretvalue1234567890ab\n")
+        with open(os.path.join(skill, "scripts", "run.py"), "w") as f:
+            f.write('KEY = "sk-' + "z" * 32 + '"\n')
+
+        errors = _check_secrets(skill)
+        assert any(".env" in e for e in errors), errors
+        assert any("provider key" in e for e in errors), errors
+        # the credential value must not appear in the error text
+        assert not any("z" * 32 in e for e in errors), errors
+
+        os.remove(os.path.join(skill, ".env"))
+        os.remove(os.path.join(skill, "scripts", "run.py"))
+        with open(os.path.join(skill, ".env.example"), "w") as f:
+            f.write("DEEPSEEK_API_KEY=\n")
+        assert _check_secrets(skill) == []
+
+
+def test_validate_cli_single_skill():
+    """CLI: validate a single skill by name and by path; unknown name fails."""
+    import subprocess
+
+    repo = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    script = os.path.join(repo, "scripts", "validate.py")
+    for target in ("deepseek-search", os.path.join("skills", "deepseek-search")):
+        proc = subprocess.run(
+            [sys.executable, script, target], capture_output=True, text=True, cwd=repo
+        )
+        assert proc.returncode == 0, proc.stdout + proc.stderr
+        assert "PASS: deepseek-search" in proc.stdout
+    proc = subprocess.run(
+        [sys.executable, script, "no-such-skill"], capture_output=True, text=True, cwd=repo
+    )
+    assert proc.returncode == 1
+    assert "skill not found" in proc.stderr
+
+
 if __name__ == "__main__":
     import traceback
 
@@ -233,6 +306,10 @@ if __name__ == "__main__":
         test_extract_hermes_requires,
         test_validate_integration,
         test_validate_name_mismatch,
+        test_is_secret_file,
+        test_find_secret_literals,
+        test_check_secrets,
+        test_validate_cli_single_skill,
     ]
 
     passed = 0

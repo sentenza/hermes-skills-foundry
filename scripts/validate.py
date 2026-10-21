@@ -8,6 +8,8 @@ Validates skills against repository standards:
 4. Reference integrity: Referenced files in references/, assets/, and supporting
    dirs (scripts/, agents/, eval-viewer/) exist on disk — in SKILL.md for all
    dirs, and in references/*.md and agents/*.md for references/ and assets/.
+5. Secret hygiene: No credential files (.env, *.pem, *.p12, *.pfx) and no
+   credential literals inside a skill directory.
 """
 
 import argparse
@@ -338,6 +340,106 @@ def _collect(*checks: Optional[str]) -> list[str]:
 
 
 # =============================================================================
+# Secret hygiene — a published skill must not carry credentials.
+# =============================================================================
+
+# Files that hold credentials by convention. Templates are allowed.
+SECRET_FILE_PATTERN = re.compile(r"^\.env(\..*)?$", re.IGNORECASE)
+SECRET_FILE_ALLOWLIST = {".env.example", ".env.sample", ".env.template"}
+SECRET_FILE_SUFFIXES = (".pem", ".p12", ".pfx")
+
+# Literal credential shapes worth refusing in a published skill.
+SECRET_LITERAL_PATTERNS = (
+    ("provider key", re.compile(r"\bsk-[A-Za-z0-9_\-]{20,}")),
+    ("github token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{20,}")),
+    ("aws access key id", re.compile(r"\bAKIA[0-9A-Z]{16}\b")),
+    ("private key block", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----")),
+)
+
+# Substrings that mark a token as documentation, not a live credential.
+PLACEHOLDER_MARKERS = (
+    "YOUR",
+    "EXAMPLE",
+    "PLACEHOLDER",
+    "REPLACE",
+    "XXXX",
+    "FAKE",
+    "DUMMY",
+    "SAMPLE",
+    "REDACTED",
+    "CHANGEME",
+)
+
+# File types scanned for credential literals.
+SCANNABLE_SUFFIXES = (
+    ".md",
+    ".py",
+    ".sh",
+    ".bash",
+    ".zsh",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".txt",
+    ".toml",
+    ".cfg",
+    ".ini",
+    ".js",
+    ".ts",
+)
+
+
+def _is_secret_file(name: str) -> bool:
+    """True when a file name is a credential file (templates excluded)."""
+    lowered = name.lower()
+    if lowered in SECRET_FILE_ALLOWLIST:
+        return False
+    if SECRET_FILE_PATTERN.match(lowered):
+        return True
+    return lowered.endswith(SECRET_FILE_SUFFIXES)
+
+
+def _find_secret_literals(text: str) -> list[str]:
+    """Return labels of credential-shaped literals found in text.
+
+    Values are never echoed back — only the kind of credential is reported.
+    """
+    found = []
+    for label, pattern in SECRET_LITERAL_PATTERNS:
+        for match in pattern.finditer(text):
+            token = match.group(0).upper()
+            if any(marker in token for marker in PLACEHOLDER_MARKERS):
+                continue
+            if label not in found:
+                found.append(label)
+    return found
+
+
+def _check_secrets(skill_dir: str) -> list[str]:
+    """Reject credential files and credential literals inside a skill directory."""
+    errors = []
+    for root, dirs, files in os.walk(skill_dir):
+        dirs[:] = [d for d in dirs if d not in {".git", "__pycache__", "node_modules"}]
+        for name in sorted(files):
+            path = os.path.join(root, name)
+            rel = os.path.relpath(path, skill_dir)
+            if _is_secret_file(name):
+                errors.append(f"Secret file '{rel}' must not be committed in a skill directory")
+                continue
+            if not name.lower().endswith(SCANNABLE_SUFFIXES):
+                continue
+            try:
+                with open(path, "r", encoding="utf-8") as fh:
+                    text = fh.read()
+            except (OSError, UnicodeDecodeError):
+                continue
+            for label in _find_secret_literals(text):
+                errors.append(f"Possible {label} literal in '{rel}' — remove it or use a placeholder")
+    return errors
+
+
+
+# =============================================================================
 # Main validation orchestration — impure (I/O, logging), calls pure rules.
 # =============================================================================
 
@@ -392,6 +494,9 @@ def validate_skill(skill_dir, verbose=False):
     # Gate 1 (cont'd): Reference integrity (runs even if other gates fail)
     errors.extend(_check_references(skill_dir, body, lines_after_fm, verbose))
 
+    # Gate 5: Secret hygiene — no credential files or literals in a skill
+    errors.extend(_check_secrets(skill_dir))
+
     if verbose:
         if errors:
             v(f"FAIL: {len(errors)} error(s)")
@@ -412,6 +517,11 @@ def main():
     parser.add_argument(
         "-j", "--jobs", type=int, default=0, help="Number of parallel jobs (0 = CPU count)."
     )
+    parser.add_argument(
+        "skill",
+        nargs="?",
+        help="Validate only this skill (directory name or path), e.g. deepseek-search",
+    )
     args = parser.parse_args()
 
     repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -420,6 +530,27 @@ def main():
     if not os.path.isdir(skills_dir):
         print("ERROR: skills directory not found", file=sys.stderr)
         return 1
+
+    if args.skill:
+        skill_path = (
+            os.path.abspath(args.skill)
+            if os.path.isdir(args.skill)
+            else os.path.join(skills_dir, args.skill)
+        )
+        if not os.path.isdir(skill_path):
+            print(f"ERROR: skill not found: {args.skill}", file=sys.stderr)
+            return 1
+        name = os.path.basename(skill_path)
+        errors = validate_skill(skill_path, verbose=args.verbose)
+        if errors:
+            print(f"FAIL: {name}")
+            for err in errors:
+                print(f"  - {err}")
+            print("\nOverall: 0 passed, 1 failed")
+            return 1
+        print(f"PASS: {name}")
+        print("\nOverall: 1 passed, 0 failed")
+        return 0
 
     skill_subdirs = [
         d
