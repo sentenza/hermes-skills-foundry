@@ -18,6 +18,7 @@ from validate import (
     _check_hermes_requires,
     _check_references,
     _check_secrets,
+    _check_root_docs,
     _is_secret_file,
     _find_secret_literals,
     _collect,
@@ -271,6 +272,23 @@ def test_check_secrets():
         assert _check_secrets(skill) == []
 
 
+def test_check_root_docs():
+    """_check_root_docs: AGENTS.md must exist and stay within the line budget."""
+    from validate import MAX_AGENTS_MD_LINES
+
+    with tempfile.TemporaryDirectory() as tmp:
+        assert _check_root_docs(tmp) == ["AGENTS.md is missing from the repository root"]
+
+        with open(os.path.join(tmp, "AGENTS.md"), "w") as f:
+            f.write("\n".join(["line"] * (MAX_AGENTS_MD_LINES + 1)))
+        errors = _check_root_docs(tmp)
+        assert errors and "line budget" in errors[0], errors
+
+        with open(os.path.join(tmp, "AGENTS.md"), "w") as f:
+            f.write("\n".join(["line"] * 10))
+        assert _check_root_docs(tmp) == []
+
+
 def test_validate_cli_single_skill():
     """CLI: validate a single skill by name and by path; unknown name fails."""
     import subprocess
@@ -309,6 +327,7 @@ if __name__ == "__main__":
         test_is_secret_file,
         test_find_secret_literals,
         test_check_secrets,
+        test_check_root_docs,
         test_validate_cli_single_skill,
     ]
 

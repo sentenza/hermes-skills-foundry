@@ -10,6 +10,8 @@ Validates skills against repository standards:
    dirs, and in references/*.md and agents/*.md for references/ and assets/.
 5. Secret hygiene: No credential files (.env, *.pem, *.p12, *.pfx) and no
    credential literals inside a skill directory.
+6. Root docs: AGENTS.md exists at the repository root and stays within its
+   200-line budget, so the standard every agent reads stays scannable.
 """
 
 import argparse
@@ -339,6 +341,29 @@ def _collect(*checks: Optional[str]) -> list[str]:
     return [c for c in checks if c is not None]
 
 
+# The root AGENTS.md is the standard every agent reads. It has to stay
+# scannable, so it carries a hard line budget.
+MAX_AGENTS_MD_LINES = 200
+
+
+def _check_root_docs(repo_root: str) -> list[str]:
+    """Check the repository-root agent docs: AGENTS.md within its line budget."""
+    errors = []
+    path = os.path.join(repo_root, "AGENTS.md")
+    if not os.path.isfile(path):
+        return ["AGENTS.md is missing from the repository root"]
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            line_count = len(fh.read().splitlines())
+    except OSError as exc:
+        return [f"Could not read AGENTS.md: {exc}"]
+    if line_count > MAX_AGENTS_MD_LINES:
+        errors.append(
+            f"AGENTS.md is {line_count} lines, over the {MAX_AGENTS_MD_LINES}-line budget"
+        )
+    return errors
+
+
 # =============================================================================
 # Secret hygiene — a published skill must not carry credentials.
 # =============================================================================
@@ -583,6 +608,13 @@ def main():
                 print(f"FAIL: {name}")
                 for err in errors:
                     print(f"  - {err}")
+
+    root_errors = _check_root_docs(repo_root)
+    if root_errors:
+        failed_count += 1
+        print("FAIL: AGENTS.md")
+        for err in root_errors:
+            print(f"  - {err}")
 
     print(f"\nOverall: {passed_count} passed, {failed_count} failed")
     return 1 if failed_count > 0 else 0
