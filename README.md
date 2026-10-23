@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml"><img alt="Validate" src="https://github.com/sentenza/hermes-skills-foundry/actions/workflows/validate.yml/badge.svg"></a>
   <img alt="Hermes" src="https://img.shields.io/badge/Hermes-%E2%89%A50.21-purple">
-  <img alt="Skills" src="https://img.shields.io/badge/skills-5-blue">
+  <img alt="Skills" src="https://img.shields.io/badge/skills-6-blue">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
 </p>
 
@@ -85,6 +85,7 @@ python3 -m unittest discover -s tests # skill script tests
 | [`hermes-profile-creator`](skills/hermes-profile-creator/) | Create and edit Hermes profiles and `SOUL.md`: persona design, profile scaffolding, distribution packaging | ≥0.21 | manual (3 workflows) |
 | [`hermes-skill-creator`](skills/hermes-skill-creator/) | Create, test, and iteratively improve Hermes skills: drafting, eval runs with/without the skill, benchmarking, review viewer | ≥0.21 | manual (3 workflows) |
 | [`omp`](skills/omp/) | Delegate coding tasks to the omp terminal agent: sessions, LSP/DAP, plan-yolo, subagents | ≥0.21 | manual (8 workflows) |
+| [`openrouter-usage`](skills/openrouter-usage/) | Report OpenRouter spend, credits, and token consumption per model and per completed UTC day via the Activity/Credits APIs | ≥0.21 | measured (6 workflows, 100%) |
 
 ### Ported skills (attribution)
 

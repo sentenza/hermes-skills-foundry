@@ -1,0 +1,16 @@
+name: openrouter-usage
+version: 0.1.0
+description: Reports OpenRouter token consumption, cost and credit balance per model and per completed UTC day via the Activity and Credits APIs.
+hermes_requires: ">=0.21"
+author: sentenza
+license: MIT
+env_requires:
+  - name: OPENROUTER_MANAGEMENT_KEY
+    description: OpenRouter management API key (not a regular inference key). Read from the environment only; never commit it.
+    required: true
+distribution_owned:
+  - SKILL.md
+  - distribution.yaml
+  - scripts
+  - references
+  - evals

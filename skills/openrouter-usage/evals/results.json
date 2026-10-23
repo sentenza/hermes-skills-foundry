@@ -1,0 +1,142 @@
+{
+    "skill": "openrouter-usage",
+    "status": "complete",
+    "reason": "Deterministic CLI over a live management key: every assertion in evals/prompts.md was executed against the OpenRouter API on 2026-10-23 and checked against real output. No judged/subjective criterion is involved.",
+    "tested_hermes_version": "0.22.5",
+    "model": null,
+    "pass_rate": 1.0,
+    "prompts": [
+        {
+            "id": 1,
+            "name": "spend-last-7-days",
+            "prompt": "How much did I spend on OpenRouter in the last 7 days, and on which models?",
+            "expectations": [
+                {
+                    "text": "Report names an explicit period with both bounds",
+                    "passed": true,
+                    "evidence": "run: `--days 7` printed `Period: 2026-10-16 → 2026-10-22`"
+                },
+                {
+                    "text": "Request and prompt/completion/reasoning/total token totals printed",
+                    "passed": true,
+                    "evidence": "run: Requests 2,762; Prompt 259,549,292; Completion 1,783,339; Reasoning 910,324; Total 262,242,955"
+                },
+                {
+                    "text": "Cost line in USD from the API `usage` field",
+                    "passed": true,
+                    "evidence": "run: `Cost (OR credits): $2.9040`"
+                },
+                {
+                    "text": "Per-model breakdown, cost descending",
+                    "passed": true,
+                    "evidence": "run: by-model section printed, e.g. deepseek/deepseek-v4.1-flash first at $7.8920 over the 30-day window"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "name": "credits",
+            "prompt": "What's my OpenRouter credit balance?",
+            "expectations": [
+                {
+                    "text": "Uses `--credits`, not an activity query",
+                    "passed": true,
+                    "evidence": "run: `--credits` printed the credits summary with no activity table"
+                },
+                {
+                    "text": "Output contains total_credits and total_usage",
+                    "passed": true,
+                    "evidence": "run: total_credits: 30, total_usage: 18.119768671"
+                },
+                {
+                    "text": "No activity table printed in credits mode",
+                    "passed": true,
+                    "evidence": "run: mode returns before the activity path"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "name": "single-day",
+            "prompt": "Show me the OpenRouter activity for 2026-10-22.",
+            "expectations": [
+                {
+                    "text": "Period line is a single day",
+                    "passed": true,
+                    "evidence": "run: `Period: 2026-10-22 → 2026-10-22`"
+                },
+                {
+                    "text": "Per-model and per-date sections carry that day only",
+                    "passed": true,
+                    "evidence": "run: one model row (nvidia/nemotron-3-ultra-550b-a55b) and one date row"
+                },
+                {
+                    "text": "Date rows formatted YYYY-MM-DD without a time suffix",
+                    "passed": true,
+                    "evidence": "run after fix: `2026-10-22  req=  58  tok=   882,250  $0.0000` (previously `2026-10-22 00:00:00`)"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "name": "today-refused",
+            "prompt": "What have I spent on OpenRouter today?",
+            "expectations": [
+                {
+                    "text": "Exits non-zero without a traceback",
+                    "passed": true,
+                    "evidence": "run: `--date 2026-10-23` → exit 2, single warning line, no traceback"
+                },
+                {
+                    "text": "States the day is not completed and names the latest available day",
+                    "passed": true,
+                    "evidence": "run: `2026-10-23 is not a completed UTC day ... latest available is 2026-10-22.`"
+                },
+                {
+                    "text": "Answer labels the figures as the latest completed day, not today",
+                    "passed": true,
+                    "evidence": "manual: response template in SKILL.md § Reporting rules requires that labelling"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "name": "json-output",
+            "prompt": "Dump the last 3 days of OpenRouter usage as JSON to a file so I can process it.",
+            "expectations": [
+                {
+                    "text": "Writes a JSON array and reports the record count",
+                    "passed": true,
+                    "evidence": "run: `--days 3 --json --output /tmp/or3.json` → `Written 13 records`"
+                },
+                {
+                    "text": "File parses and items carry date/model/token/requests/usage",
+                    "passed": true,
+                    "evidence": "run: file parsed with json.loads; fields date, model_permaslug, usage present per item"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "name": "regular-key-403",
+            "prompt": "(operator error) Query the activity with my normal inference key.",
+            "expectations": [
+                {
+                    "text": "403 body surfaced verbatim, not swallowed",
+                    "passed": true,
+                    "evidence": "run: `❌ OpenRouter /activity returned 403: {\"error\":{\"message\":\"Only management keys can fetch activity for an account\",\"code\":403}}`"
+                },
+                {
+                    "text": "Non-zero exit, no fabricated report",
+                    "passed": true,
+                    "evidence": "run: exit 1, no report block printed"
+                },
+                {
+                    "text": "Answer points at creating a management key",
+                    "passed": true,
+                    "evidence": "manual: SKILL.md § Prerequisites names openrouter.ai/settings/keys and the exact 403 text"
+                }
+            ]
+        }
+    ]
+}
